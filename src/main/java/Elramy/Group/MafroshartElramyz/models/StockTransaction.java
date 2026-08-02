@@ -41,6 +41,7 @@ public class StockTransaction extends BaseEntity {
      * جرد
      */
     private Long referenceId;
+    private String referenceType;
 
     private String notes;
 

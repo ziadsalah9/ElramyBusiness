@@ -1,0 +1,6 @@
+
+
+1- should add user in all of operations should show part 6 in stock management
+
+2- integrate sales and purchase invoice with stock should show part 9 in stock management
+

@@ -5,8 +5,10 @@ public enum TransactionType {
     STOCK_IN,
     SALE,
     RETURN,
+
     TRANSFER_IN,
     TRANSFER_OUT,
-    ADJUSTMENT
 
+    ADJUSTMENT_IN,
+    ADJUSTMENT_OUT
 }
