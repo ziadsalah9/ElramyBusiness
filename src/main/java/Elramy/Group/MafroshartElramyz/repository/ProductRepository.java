@@ -28,5 +28,6 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
         OR LOWER(COALESCE(p.size,'')) LIKE LOWER(CONCAT('%',:keyword,'%'))
         """)
     List<Product> search(String keyword);
+    Optional<Product> findByCode(String code);
 
 }
