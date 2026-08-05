@@ -33,6 +33,7 @@ public class SalesInvoiceServiceImpl
     private final StockService stockService;
     private final SalesInvoiceMapper salesInvoiceMapper;
     private final CustomerRepository customerRepository;
+    private final UserService userService;
 
 
     // =========================================================
@@ -56,6 +57,8 @@ public class SalesInvoiceServiceImpl
                         )
                 );
 
+        User currentUser =
+                userService.getCurrentUser();
 
         // =========================================================
         // CUSTOMER
@@ -116,6 +119,7 @@ public class SalesInvoiceServiceImpl
                         .invoiceNumber(generateInvoiceNumber())
                         .branch(branch)
                         .customer(customer)
+                        .cashier(currentUser)
                         .discount(invoiceDiscount)
                         .paid(paid)
                         .paymentMethod(request.paymentMethod())

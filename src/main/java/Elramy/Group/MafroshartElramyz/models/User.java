@@ -26,7 +26,10 @@ public class User extends BaseEntity {
     @Column(nullable = false)
     private String fullName;
 
+
+
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private Role role;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -16,7 +16,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({
             BranchNotFoundException.class,
             CustomerPhoneNotFoundException.class,
-            ProductNotFoundException.class
+            ProductNotFoundException.class,
+            UserNotFoundException.class
     })
     public ResponseEntity<ApiError> handleNotFound(RuntimeException ex) {
 
@@ -62,6 +63,19 @@ public class GlobalExceptionHandler {
                 message);
 
         return ResponseEntity.badRequest().body(error);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiError> handleIllegalArgument(IllegalArgumentException ex) {
+
+        ApiError error = new ApiError(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(error);
     }
 
 }

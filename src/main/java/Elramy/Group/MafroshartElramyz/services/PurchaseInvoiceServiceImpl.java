@@ -38,6 +38,7 @@ public class PurchaseInvoiceServiceImpl
 
     private final PurchaseInvoiceMapper purchaseInvoiceMapper;
     private final StockService stockService;
+    private final UserService userService;
 
 
     // =========================================================
@@ -75,6 +76,8 @@ public class PurchaseInvoiceServiceImpl
                 );
 
 
+        var username = userService.getCurrentUser();
+
         // -----------------------------------------------------
         // 3. Create invoice
         // -----------------------------------------------------
@@ -96,6 +99,7 @@ public class PurchaseInvoiceServiceImpl
                         .paymentMethod(request.paymentMethod())
                         .notes(request.notes())
                         .total(BigDecimal.ZERO)
+                        .createdBy(username)
                         .build();
 
 
@@ -228,6 +232,8 @@ public class PurchaseInvoiceServiceImpl
                     item.getUnitPrice(),
 
                     invoice.getId(),
+
+
 
                     "PURCHASE_INVOICE",
 
