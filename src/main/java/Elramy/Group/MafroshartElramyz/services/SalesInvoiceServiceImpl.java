@@ -5,6 +5,7 @@ import Elramy.Group.MafroshartElramyz.enums.TransactionType;
 import Elramy.Group.MafroshartElramyz.enums.salesInvoice.SalesInvoiceItemRequest;
 import Elramy.Group.MafroshartElramyz.enums.salesInvoice.SalesInvoiceRequest;
 import Elramy.Group.MafroshartElramyz.enums.salesInvoice.SalesInvoiceResponse;
+import Elramy.Group.MafroshartElramyz.exception.CustomerPhoneNotFoundException;
 import Elramy.Group.MafroshartElramyz.exception.ProductNotFoundException;
 import Elramy.Group.MafroshartElramyz.mapping.SalesInvoiceMapper;
 import Elramy.Group.MafroshartElramyz.models.*;
@@ -31,6 +32,7 @@ public class SalesInvoiceServiceImpl
 
     private final StockService stockService;
     private final SalesInvoiceMapper salesInvoiceMapper;
+    private final CustomerRepository customerRepository;
 
 
     // =========================================================
@@ -41,9 +43,9 @@ public class SalesInvoiceServiceImpl
     public SalesInvoiceResponse create(
             SalesInvoiceRequest request) {
 
-        // -----------------------------------------------------
-        // 1. GET BRANCH
-        // -----------------------------------------------------
+        // =========================================================
+        // GET BRANCH
+        // =========================================================
 
         Branch branch = branchRepository
                 .findById(request.branchId())
@@ -55,27 +57,75 @@ public class SalesInvoiceServiceImpl
                 );
 
 
-        // -----------------------------------------------------
-        // 2. CREATE INVOICE
-        // -----------------------------------------------------
+        // =========================================================
+        // CUSTOMER
+        // =========================================================
 
-        SalesInvoice invoice = SalesInvoice.builder()
-                .invoiceNumber(generateInvoiceNumber())
-                .branch(branch)
-                .discount(
-                        request.discount() != null
-                                ? request.discount()
-                                : BigDecimal.ZERO
-                )
-                .paid(
-                        request.paid() != null
-                                ? request.paid()
-                                : BigDecimal.ZERO
-                )
-                .paymentMethod(request.paymentMethod())
-                .notes(request.notes())
-                .build();
+        Customer customer = null;
 
+        if (request.customer() != null
+                && request.customer().phone() != null
+                && !request.customer().phone().isBlank()) {
+
+            String phone =
+                    request.customer().phone().trim();
+
+            customer = customerRepository
+                    .findByPhone(phone)
+                    .orElseGet(() -> {
+
+                        Customer newCustomer =
+                                Customer.builder()
+                                        .name(request.customer().name())
+                                        .phone(phone)
+                                        .address(request.customer().address())
+                                        .active(true)
+                                        .build();
+
+                        return customerRepository.save(newCustomer);
+                    });
+        }
+
+
+        // =========================================================
+        // PAID
+        // =========================================================
+
+        BigDecimal paid =
+                request.paid() != null
+                        ? request.paid()
+                        : BigDecimal.ZERO;
+
+
+        // =========================================================
+        // INVOICE DISCOUNT
+        // =========================================================
+
+        BigDecimal invoiceDiscount =
+                request.discount() != null
+                        ? request.discount()
+                        : BigDecimal.ZERO;
+
+
+        // =========================================================
+        // CREATE INVOICE
+        // =========================================================
+
+        SalesInvoice invoice =
+                SalesInvoice.builder()
+                        .invoiceNumber(generateInvoiceNumber())
+                        .branch(branch)
+                        .customer(customer)
+                        .discount(invoiceDiscount)
+                        .paid(paid)
+                        .paymentMethod(request.paymentMethod())
+                        .notes(request.notes())
+                        .build();
+
+
+        // =========================================================
+        // CREATE ITEMS
+        // =========================================================
 
         List<SalesInvoiceItem> items =
                 new ArrayList<>();
@@ -83,27 +133,24 @@ public class SalesInvoiceServiceImpl
         BigDecimal subtotal = BigDecimal.ZERO;
 
 
-        // -----------------------------------------------------
-        // 3. CREATE ITEMS
-        // -----------------------------------------------------
-
         for (SalesInvoiceItemRequest itemRequest
                 : request.items()) {
 
-            Product product = productRepository
-                    .findById(itemRequest.productId())
-                    .orElseThrow(() ->
-                            new ProductNotFoundException(
-                                    itemRequest.productId()
-                            )
-                    );
+            Product product =
+                    productRepository
+                            .findById(itemRequest.productId())
+                            .orElseThrow(() ->
+                                    new ProductNotFoundException(
+                                            itemRequest.productId()
+                                    )
+                            );
 
 
-            // -------------------------------------------------
-            // GET CURRENT PRICE
-            // -------------------------------------------------
+            // =====================================================
+            // GET CURRENT SELLING PRICE
+            // =====================================================
 
-            ProductPrice currentPrice =
+            ProductPrice productPrice =
                     productPriceRepository
                             .findByProductIdAndActiveTrue(
                                     product.getId()
@@ -117,12 +164,12 @@ public class SalesInvoiceServiceImpl
 
 
             BigDecimal unitPrice =
-                    currentPrice.getSellingPrice();
+                    productPrice.getSellingPrice();
 
 
-            // -------------------------------------------------
-            // DISCOUNT
-            // -------------------------------------------------
+            // =====================================================
+            // ITEM DISCOUNT
+            // =====================================================
 
             BigDecimal itemDiscount =
                     itemRequest.discount() != null
@@ -130,31 +177,31 @@ public class SalesInvoiceServiceImpl
                             : BigDecimal.ZERO;
 
 
-            // -------------------------------------------------
+            // =====================================================
             // CALCULATE ITEM TOTAL
-            // -------------------------------------------------
-
-            BigDecimal itemSubtotal =
-                    unitPrice.multiply(
-                            BigDecimal.valueOf(
-                                    itemRequest.quantity()
-                            )
-                    );
+            // =====================================================
 
             BigDecimal itemTotal =
-                    itemSubtotal.subtract(itemDiscount);
+                    unitPrice
+                            .multiply(
+                                    BigDecimal.valueOf(
+                                            itemRequest.quantity()
+                                    )
+                            )
+                            .subtract(itemDiscount);
 
 
             if (itemTotal.compareTo(BigDecimal.ZERO) < 0) {
+
                 throw new IllegalArgumentException(
                         "Item discount cannot be greater than item total"
                 );
             }
 
 
-            // -------------------------------------------------
+            // =====================================================
             // CREATE ITEM
-            // -------------------------------------------------
+            // =====================================================
 
             SalesInvoiceItem item =
                     SalesInvoiceItem.builder()
@@ -166,65 +213,59 @@ public class SalesInvoiceServiceImpl
                             .total(itemTotal)
                             .build();
 
+
             items.add(item);
 
             subtotal = subtotal.add(itemTotal);
         }
 
 
-        invoice.setItems(items);
-
-
-        // -----------------------------------------------------
-        // 4. INVOICE DISCOUNT
-        // -----------------------------------------------------
-
-        BigDecimal invoiceDiscount =
-                request.discount() != null
-                        ? request.discount()
-                        : BigDecimal.ZERO;
-
+        // =========================================================
+        // CALCULATE INVOICE TOTAL
+        // =========================================================
 
         BigDecimal total =
                 subtotal.subtract(invoiceDiscount);
 
 
         if (total.compareTo(BigDecimal.ZERO) < 0) {
+
             throw new IllegalArgumentException(
-                    "Invoice discount cannot be greater than invoice total"
+                    "Invoice discount cannot be greater than subtotal"
             );
         }
 
 
-        invoice.setTotal(total);
-
-
-        // -----------------------------------------------------
-        // 5. VALIDATE PAID
-        // -----------------------------------------------------
-
-        BigDecimal paid =
-                request.paid() != null
-                        ? request.paid()
-                        : BigDecimal.ZERO;
+        // =========================================================
+        // VALIDATE PAID
+        // =========================================================
 
         if (paid.compareTo(total) > 0) {
+
             throw new IllegalArgumentException(
                     "Paid amount cannot be greater than invoice total"
             );
         }
 
 
-        // -----------------------------------------------------
-        // 6. SAVE INVOICE FIRST
-        // -----------------------------------------------------
+        // =========================================================
+        // SET ITEMS + TOTAL
+        // =========================================================
+
+        invoice.setItems(items);
+        invoice.setTotal(total);
+
+
+        // =========================================================
+        // SAVE INVOICE FIRST
+        // =========================================================
 
         salesInvoiceRepository.save(invoice);
 
 
-        // -----------------------------------------------------
-        // 7. DECREASE STOCK
-        // -----------------------------------------------------
+        // =========================================================
+        // DECREASE STOCK
+        // =========================================================
 
         for (SalesInvoiceItem item : items) {
 
@@ -244,15 +285,18 @@ public class SalesInvoiceServiceImpl
 
                     "SALES_INVOICE",
 
-                    "Sale invoice: "
+                    "Sales invoice: "
                             + invoice.getInvoiceNumber()
             );
         }
 
 
+        // =========================================================
+        // RETURN RESPONSE
+        // =========================================================
+
         return salesInvoiceMapper.toResponse(invoice);
     }
-
 
     // =========================================================
     // GET BY ID
@@ -274,6 +318,30 @@ public class SalesInvoiceServiceImpl
         return salesInvoiceMapper.toResponse(invoice);
     }
 
+
+
+    @Transactional(readOnly = true)
+    public List<SalesInvoiceResponse> getByPhone(String phone) {
+
+        var  customer = customerRepository.findByPhone(phone).orElseThrow(() ->
+                new CustomerPhoneNotFoundException(
+                        phone
+                )
+        );
+
+        var id = customer.getId();
+
+
+
+
+        return salesInvoiceRepository
+                .findByCustomerId(
+                        id
+                )
+                .stream()
+                .map(salesInvoiceMapper::toResponse)
+                .toList();
+    }
 
     // =========================================================
     // GET ALL

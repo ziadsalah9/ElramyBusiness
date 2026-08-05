@@ -16,4 +16,6 @@ public interface SalesInvoiceRepository
     List<SalesInvoice> findByBranchIdOrderByCreatedAtDesc(Long branchId);
 
     List<SalesInvoice> findByCashierIdOrderByCreatedAtDesc(Long cashierId);
+
+   List <SalesInvoice> findByCustomerId(Long id);
 }

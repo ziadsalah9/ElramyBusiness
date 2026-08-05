@@ -1,6 +1,7 @@
 package Elramy.Group.MafroshartElramyz.enums.product;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 public record ProductPriceResponse(
 
@@ -10,6 +11,11 @@ public record ProductPriceResponse(
 
         BigDecimal sellingPrice,
 
-        BigDecimal profitPercentage
+        BigDecimal profitPercentage,
+
+
+        Boolean active,
+
+        LocalDateTime createdAt
 
 ) {}

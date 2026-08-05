@@ -86,4 +86,13 @@ public class SalesInvoiceController {
                 salesInvoiceService.getByCashier(cashierId)
         );
     }
+
+    @GetMapping("/cutomer/{phone}")
+    public ResponseEntity<List<SalesInvoiceResponse>> getByCustomerPhone(
+            @PathVariable String phone) {
+
+        return ResponseEntity.ok(
+                salesInvoiceService.getByPhone(phone)
+        );
+    }
 }

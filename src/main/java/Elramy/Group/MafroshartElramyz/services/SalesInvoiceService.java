@@ -4,6 +4,7 @@ package Elramy.Group.MafroshartElramyz.services;
 
 import Elramy.Group.MafroshartElramyz.enums.salesInvoice.SalesInvoiceRequest;
 import Elramy.Group.MafroshartElramyz.enums.salesInvoice.SalesInvoiceResponse;
+import Elramy.Group.MafroshartElramyz.models.SalesInvoice;
 
 import java.util.List;
 
@@ -24,4 +25,7 @@ public interface SalesInvoiceService {
     List<SalesInvoiceResponse> getByCashier(
             Long cashierId
     );
+
+    List<SalesInvoiceResponse>getByPhone(String phone) ;
+
 }

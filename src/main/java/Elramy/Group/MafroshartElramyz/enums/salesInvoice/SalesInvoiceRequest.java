@@ -1,6 +1,7 @@
 package Elramy.Group.MafroshartElramyz.enums.salesInvoice;
 
 import Elramy.Group.MafroshartElramyz.enums.PaymentMethod;
+import Elramy.Group.MafroshartElramyz.enums.customer.CustomerInvoiceRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotEmpty;
@@ -14,10 +15,12 @@ public record SalesInvoiceRequest(
         @NotNull
         Long branchId,
 
+        CustomerInvoiceRequest customer,
+
+
         @NotNull
         PaymentMethod paymentMethod,
 
-        @Valid
         @NotEmpty
         List<SalesInvoiceItemRequest> items,
 

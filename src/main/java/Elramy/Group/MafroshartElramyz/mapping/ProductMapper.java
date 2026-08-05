@@ -9,32 +9,59 @@ import org.springframework.stereotype.Component;
 @Component
 public class ProductMapper {
 
-    public ProductResponse toResponse(Product product, ProductPrice price) {
-
-        ProductPriceResponse currentPrice = null;
-
-        if (price != null) {
-            currentPrice = new ProductPriceResponse(
-                    price.getId(),
-                    price.getPurchasePrice(),
-                    price.getSellingPrice(),
-                    price.getProfitPercentage()
-            );
-        }
+    public ProductResponse toResponse(
+            Product product,
+            ProductPrice currentPrice) {
 
         return new ProductResponse(
+
                 product.getId(),
+
                 product.getCode(),
+
                 product.getBarcode(),
+
                 product.getName(),
+
                 product.getModel(),
-                product.getItemType().name(),
+
+                product.getItemType() != null
+                        ? product.getItemType().name()
+                        : null,
+
                 product.getColor(),
+
                 product.getSize(),
-              currentPrice,
+
+                toPriceResponse(currentPrice),
+
                 product.getMinimumQuantity(),
+
                 product.getActive()
         );
     }
 
+
+    private ProductPriceResponse toPriceResponse(
+            ProductPrice price) {
+
+        if (price == null) {
+            return null;
+        }
+
+        return new ProductPriceResponse(
+
+                price.getId(),
+
+                price.getPurchasePrice(),
+
+                price.getSellingPrice(),
+
+                price.getProfitPercentage(),
+
+                price.getActive(),
+
+                price.getCreatedAt()
+        );
+    }
 }

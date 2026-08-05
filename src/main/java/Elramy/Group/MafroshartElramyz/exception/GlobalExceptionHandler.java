@@ -13,9 +13,12 @@ import java.time.LocalDateTime;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(BranchNotFoundException.class)
-    public ResponseEntity<ApiError> handleNotFound(
-            BranchNotFoundException ex){
+    @ExceptionHandler({
+            BranchNotFoundException.class,
+            CustomerPhoneNotFoundException.class,
+            ProductNotFoundException.class
+    })
+    public ResponseEntity<ApiError> handleNotFound(RuntimeException ex) {
 
         ApiError error = new ApiError(
                 LocalDateTime.now(),
@@ -27,9 +30,12 @@ public class GlobalExceptionHandler {
                 .body(error);
     }
 
-    @ExceptionHandler(DuplicateBranchException.class)
-    public ResponseEntity<ApiError> handleDuplicate(
-            DuplicateBranchException ex){
+    @ExceptionHandler({
+            DuplicateBranchException.class,
+            DuplicateProductException.class,
+            DuplicatePurchaseInvoiceException.class
+    })
+    public ResponseEntity<ApiError> handleDuplicate(RuntimeException ex) {
 
         ApiError error = new ApiError(
                 LocalDateTime.now(),

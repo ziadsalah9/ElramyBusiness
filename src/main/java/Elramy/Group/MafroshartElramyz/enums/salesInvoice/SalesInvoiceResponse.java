@@ -1,6 +1,7 @@
 package Elramy.Group.MafroshartElramyz.enums.salesInvoice;
 
 import Elramy.Group.MafroshartElramyz.enums.PaymentMethod;
+import Elramy.Group.MafroshartElramyz.enums.customer.CustomerResponse;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -9,6 +10,8 @@ import java.util.List;
 public record SalesInvoiceResponse(
 
         Long id,
+
+        CustomerResponse customer,
 
         String invoiceNumber,
 

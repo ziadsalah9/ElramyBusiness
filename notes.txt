@@ -4,3 +4,10 @@
 
 2- integrate sales and purchase invoice with stock should show part 9 in stock management
 
+
+//prices
+// create product --> using method (create price ) add all prices (purchase , profit percentage , selling price )
+------> then using purchase-invoice to increase stock , selling invoice to decrease stock
+
+
+// note there is purchase price (unit price * quantity it's just for history )

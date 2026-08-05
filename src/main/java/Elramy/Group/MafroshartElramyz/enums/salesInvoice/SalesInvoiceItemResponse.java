@@ -1,5 +1,7 @@
 package Elramy.Group.MafroshartElramyz.enums.salesInvoice;
 
+import Elramy.Group.MafroshartElramyz.enums.customer.CustomerResponse;
+
 import java.math.BigDecimal;
 
 public record SalesInvoiceItemResponse(
@@ -22,5 +24,7 @@ public record SalesInvoiceItemResponse(
 
         BigDecimal total
 
-) {
+
+
+        ) {
 }

@@ -1,13 +1,11 @@
 package Elramy.Group.MafroshartElramyz.controller;
 
-import Elramy.Group.MafroshartElramyz.enums.product.CreateProductRequest;
-import Elramy.Group.MafroshartElramyz.enums.product.ProductResponse;
-import Elramy.Group.MafroshartElramyz.enums.product.UpdatePriceRequest;
-import Elramy.Group.MafroshartElramyz.enums.product.UpdateProductRequest;
+import Elramy.Group.MafroshartElramyz.enums.product.*;
 import Elramy.Group.MafroshartElramyz.services.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -33,6 +31,22 @@ public class ProductController {
             @Valid @RequestBody UpdateProductRequest request) {
 
         return productService.update(id, request);
+    }
+
+    @PostMapping("/{id}/price")
+    public ResponseEntity<ProductResponse> createPrice(
+            @PathVariable Long id,
+            @RequestBody CreateProductPriceRequest request
+    ) {
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(
+                        productService.createPrice(
+                                id,
+                                request
+                        )
+                );
     }
 
     @PatchMapping("/{id}/price")
@@ -68,5 +82,7 @@ public class ProductController {
 
         productService.toggleStatus(id);
     }
+
+
 
 }

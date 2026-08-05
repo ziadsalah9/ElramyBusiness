@@ -46,6 +46,11 @@ public class SalesInvoice extends BaseEntity {
 
     private String notes;
 
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_id")
+    private Customer customer;
+
     @OneToMany(mappedBy = "invoice",
             cascade = CascadeType.ALL,
             orphanRemoval = true)

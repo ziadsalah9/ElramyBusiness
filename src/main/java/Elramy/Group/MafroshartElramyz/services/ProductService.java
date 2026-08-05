@@ -1,9 +1,6 @@
 package Elramy.Group.MafroshartElramyz.services;
 
-import Elramy.Group.MafroshartElramyz.enums.product.CreateProductRequest;
-import Elramy.Group.MafroshartElramyz.enums.product.ProductResponse;
-import Elramy.Group.MafroshartElramyz.enums.product.UpdatePriceRequest;
-import Elramy.Group.MafroshartElramyz.enums.product.UpdateProductRequest;
+import Elramy.Group.MafroshartElramyz.enums.product.*;
 
 import java.util.List;
 
@@ -19,6 +16,12 @@ public interface ProductService {
     List<ProductResponse> getAll();
 
     void toggleStatus(Long id);
+
+
+    ProductResponse createPrice(
+            Long productId,
+            CreateProductPriceRequest request
+    );
 
     ProductResponse updatePrice(Long id, UpdatePriceRequest request);
 
