@@ -3,6 +3,7 @@ package Elramy.Group.MafroshartElramyz.services;
 import Elramy.Group.MafroshartElramyz.enums.TransactionType;
 import Elramy.Group.MafroshartElramyz.enums.branchTransfer.*;
 import Elramy.Group.MafroshartElramyz.exception.ProductNotFoundException;
+import Elramy.Group.MafroshartElramyz.exception.ResourceNotFoundException;
 import Elramy.Group.MafroshartElramyz.mapping.BranchTransferMapper;
 import Elramy.Group.MafroshartElramyz.models.Branch;
 import Elramy.Group.MafroshartElramyz.models.BranchTransfer;
@@ -33,6 +34,8 @@ public class BranchTransferServiceImpl
 
     private final BranchTransferMapper branchTransferMapper;
 
+    private final UserService currentUser;
+
 
     // =========================================================
     // CREATE TRANSFER
@@ -52,18 +55,30 @@ public class BranchTransferServiceImpl
         Branch fromBranch = branchRepository
                 .findById(request.fromBranchId())
                 .orElseThrow(() ->
-                        new RuntimeException(
+                        new ResourceNotFoundException(
                                 "Source branch not found."
                         )
                 );
 
+//        currentUser.validateBranchAccess(
+//                fromBranch.getId()
+//        );
+
         Branch toBranch = branchRepository
                 .findById(request.toBranchId())
                 .orElseThrow(() ->
-                        new RuntimeException(
+                        new ResourceNotFoundException(
                                 "Destination branch not found."
                         )
                 );
+
+        if (fromBranch.getId()
+                .equals(toBranch.getId())) {
+
+            throw new IllegalArgumentException(
+                    "Source and destination branches cannot be the same"
+            );
+        }
 
 
         BranchTransfer transfer = BranchTransfer.builder()
@@ -87,7 +102,7 @@ public class BranchTransferServiceImpl
                                     fromBranch.getId()
                             )
                             .orElseThrow(() ->
-                                    new RuntimeException(
+                                    new ResourceNotFoundException(
                                             "Product stock not found in source branch."
                                     )
                             );

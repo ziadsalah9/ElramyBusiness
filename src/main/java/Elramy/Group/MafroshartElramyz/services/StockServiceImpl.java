@@ -34,6 +34,7 @@ public class StockServiceImpl implements StockService {
 
     private final ProductStockMapper productStockMapper;
     private final StockTransactionMapper stockTransactionMapper;
+    private final UserService currentUserService;
 
 
     // =========================================================
@@ -135,6 +136,9 @@ public class StockServiceImpl implements StockService {
             String referenceType,
             String notes) {
 
+        //currentUserService.validateBranchAccess(branchId);
+
+
         validateQuantity(quantity);
 
         ProductStock stock = getOrCreateStock(
@@ -174,6 +178,8 @@ public class StockServiceImpl implements StockService {
             Long referenceId,
             String referenceType,
             String notes) {
+
+        //currentUserService.validateBranchAccess(branchId);
 
         validateQuantity(quantity);
 

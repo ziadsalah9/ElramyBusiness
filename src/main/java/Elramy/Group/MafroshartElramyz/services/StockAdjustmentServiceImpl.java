@@ -30,6 +30,8 @@ public class StockAdjustmentServiceImpl
 
     private final StockAdjustmentMapper stockAdjustmentMapper;
 
+    private final UserService currentUserService;
+
 
     // =========================================================
     // CREATE ADJUSTMENT
@@ -48,6 +50,12 @@ public class StockAdjustmentServiceImpl
                         )
                 );
 
+        currentUserService.validateBranchAccess(
+                stock.getBranch().getId()
+        );
+        User currentUser =
+                currentUserService.getCurrentUser();
+
         Integer systemQuantity = stock.getQuantity();
 
         Integer actualQuantity = request.actualQuantity();
@@ -61,6 +69,7 @@ public class StockAdjustmentServiceImpl
         // =====================================================
 
         stock.setQuantity(actualQuantity);
+
 
         productStockRepository.save(stock);
 
@@ -76,6 +85,7 @@ public class StockAdjustmentServiceImpl
                         .actualQuantity(actualQuantity)
                         .difference(difference)
                         .notes(request.notes())
+                        .createdBy(currentUser)
                         .build();
 
         stockAdjustmentRepository.save(adjustment);
@@ -100,6 +110,7 @@ public class StockAdjustmentServiceImpl
                             .referenceId(adjustment.getId())
                             .referenceType("STOCK_ADJUSTMENT")
                             .notes(request.notes())
+                            .createdBy(currentUser)
                             .build();
 
             stockTransactionRepository.save(transaction);

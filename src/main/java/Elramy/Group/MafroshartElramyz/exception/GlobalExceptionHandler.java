@@ -1,6 +1,7 @@
 package Elramy.Group.MafroshartElramyz.exception;
 
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -77,5 +78,73 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(error);
     }
+
+
+
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleNotFound(
+            ResourceNotFoundException ex,
+            HttpServletRequest request) {
+
+        return buildResponse(
+                HttpStatus.NOT_FOUND,
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+    }
+
+
+    // =========================================================
+    // UNAUTHORIZED
+    // =========================================================
+
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ApiErrorResponse> handleUnauthorized(
+            UnauthorizedException ex,
+            HttpServletRequest request) {
+
+        return buildResponse(
+                HttpStatus.UNAUTHORIZED,
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+    }
+
+
+    // =========================================================
+    // BRANCH ACCESS DENIED
+    // =========================================================
+
+    @ExceptionHandler(BranchAccessDeniedException.class)
+    public ResponseEntity<ApiErrorResponse> handleBranchAccess(
+            BranchAccessDeniedException ex,
+            HttpServletRequest request) {
+
+        return buildResponse(
+                HttpStatus.FORBIDDEN,
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+    }
+
+    private ResponseEntity<ApiErrorResponse> buildResponse(
+            HttpStatus status,
+            String message,
+            String path) {
+
+        return ResponseEntity
+                .status(status)
+                .body(
+                        new ApiErrorResponse(
+                                LocalDateTime.now(),
+                                status.value(),
+                                message,
+                                path,
+                                null
+                        )
+                );
+    }
+
 
 }

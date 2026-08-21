@@ -1,0 +1,9 @@
+package Elramy.Group.MafroshartElramyz.exception;
+
+public class ResourceNotFoundException
+        extends RuntimeException {
+
+    public ResourceNotFoundException(String message) {
+        super(message);
+    }
+}

@@ -77,6 +77,7 @@ public class PurchaseInvoiceServiceImpl
 
 
         var username = userService.getCurrentUser();
+        userService.validateBranchAccess(request.branchId());
 
         // -----------------------------------------------------
         // 3. Create invoice

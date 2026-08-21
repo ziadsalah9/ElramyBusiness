@@ -70,4 +70,6 @@ public interface UserService {
             Long id
     );
     User getCurrentUser();
+
+     void validateBranchAccess(Long branchId);
 }

@@ -3,6 +3,8 @@ package Elramy.Group.MafroshartElramyz.services;
 import Elramy.Group.MafroshartElramyz.enums.Role;
 import Elramy.Group.MafroshartElramyz.enums.user.CreateUserRequest;
 import Elramy.Group.MafroshartElramyz.enums.user.UserResponse;
+import Elramy.Group.MafroshartElramyz.exception.BranchAccessDeniedException;
+import Elramy.Group.MafroshartElramyz.exception.UnauthorizedException;
 import Elramy.Group.MafroshartElramyz.exception.UserNotFoundException;
 import Elramy.Group.MafroshartElramyz.models.Branch;
 import Elramy.Group.MafroshartElramyz.models.User;
@@ -318,7 +320,7 @@ public class UserServiceImpl implements UserService {
         if (authentication == null
                 || !authentication.isAuthenticated()) {
 
-            throw new RuntimeException(
+            throw new UnauthorizedException(
                     "User is not authenticated"
             );
         }
@@ -360,5 +362,36 @@ public class UserServiceImpl implements UserService {
 
                 user.getActive()
         );
+    }
+
+
+    public void validateBranchAccess(Long branchId) {
+
+        User currentUser =
+                getCurrentUser();
+
+
+
+        if (currentUser.getRole() == Role.ADMIN) {
+            return;
+        }
+
+
+        if (currentUser.getBranch() == null) {
+
+            throw new BranchAccessDeniedException(
+                    "Current user is not assigned to a branch"
+            );
+        }
+
+
+        if (!currentUser.getBranch()
+                .getId()
+                .equals(branchId)) {
+
+            throw new BranchAccessDeniedException(
+                    "You cannot access another branch"
+            );
+        }
     }
 }

@@ -1,10 +1,12 @@
 package Elramy.Group.MafroshartElramyz.services;
 
 
+import Elramy.Group.MafroshartElramyz.enums.Role;
 import Elramy.Group.MafroshartElramyz.enums.TransactionType;
 import Elramy.Group.MafroshartElramyz.enums.salesInvoice.SalesInvoiceItemRequest;
 import Elramy.Group.MafroshartElramyz.enums.salesInvoice.SalesInvoiceRequest;
 import Elramy.Group.MafroshartElramyz.enums.salesInvoice.SalesInvoiceResponse;
+import Elramy.Group.MafroshartElramyz.exception.BranchAccessDeniedException;
 import Elramy.Group.MafroshartElramyz.exception.CustomerPhoneNotFoundException;
 import Elramy.Group.MafroshartElramyz.exception.ProductNotFoundException;
 import Elramy.Group.MafroshartElramyz.mapping.SalesInvoiceMapper;
@@ -60,6 +62,22 @@ public class SalesInvoiceServiceImpl
         User currentUser =
                 userService.getCurrentUser();
 
+        if (currentUser.getRole() != Role.ADMIN) {
+
+            if (currentUser.getBranch() == null) {
+                throw new BranchAccessDeniedException(
+                        "Current user is not assigned to a branch"
+                );
+            }
+
+            if (!currentUser.getBranch().getId()
+                    .equals(branch.getId())) {
+
+                throw new BranchAccessDeniedException(
+                        "You cannot create an invoice for another branch"
+                );
+            }
+        }
         // =========================================================
         // CUSTOMER
         // =========================================================
