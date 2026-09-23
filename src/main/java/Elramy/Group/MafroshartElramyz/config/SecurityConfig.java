@@ -15,6 +15,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
 @EnableMethodSecurity
@@ -24,6 +25,8 @@ public class SecurityConfig {
     private final CustomUserDetailsService userDetailsService;
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    private final CorsConfigurationSource corsConfigurationSource; // 👈 مجرد إضافة هذا السطر
 
 
     // =========================================================
@@ -88,7 +91,7 @@ public class SecurityConfig {
                 .csrf(csrf ->
                         csrf.disable()
                 )
-                .cors(cors -> {})
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
 
 
                 // =================================================
