@@ -17,10 +17,11 @@ public class CorsConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOrigins(List.of(
-                "http://localhost:5173",
-                "http://localhost:3000",
-                "https://admin-buddy-62.lovable.app",
-                "https://arabic-furniture-man-98a2.bolt.host"
+//                "http://localhost:5173",
+//                "http://localhost:3000",
+//                "https://admin-buddy-62.lovable.app",
+//                "https://arabic-furniture-man-98a2.bolt.host"
+                "*"
         ));
 
         configuration.setAllowedMethods(List.of(
