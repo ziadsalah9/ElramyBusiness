@@ -14,12 +14,10 @@ import java.util.List;
 public class CorsConfig {
 
     @Bean
-    @Order(Ordered.HIGHEST_PRECEDENCE) // 👈 يضمن تنفيذ فحص CORS قبل أي سكيورتي أو JWT
     public CorsConfigurationSource corsConfigurationSource() {
 
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowCredentials(true);
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:5173",
              "http://localhost:3000",

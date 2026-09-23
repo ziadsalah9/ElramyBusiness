@@ -89,10 +89,10 @@ public class SecurityConfig {
                 // CSRF
                 // =================================================
 
-                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .csrf(csrf ->
                         csrf.disable()
                 )
+                .cors(cors -> {})
 
 
                 // =================================================
