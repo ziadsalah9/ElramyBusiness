@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,6 +25,7 @@ public class UserController {
     // =========================================================
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponse> create(
             @Valid @RequestBody CreateUserRequest request) {
 
@@ -38,6 +40,7 @@ public class UserController {
     // =========================================================
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponse> getById(
             @PathVariable Long id) {
 
@@ -52,6 +55,7 @@ public class UserController {
     // =========================================================
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UserResponse>> getAll() {
 
         return ResponseEntity.ok(
@@ -65,6 +69,7 @@ public class UserController {
     // =========================================================
 
     @GetMapping("/username/{username}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponse> getByUsername(
             @PathVariable String username) {
 
@@ -79,6 +84,7 @@ public class UserController {
     // =========================================================
 
     @GetMapping("/employees")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UserResponse>> getEmployees() {
 
         return ResponseEntity.ok(
@@ -92,6 +98,7 @@ public class UserController {
     // =========================================================
 
     @GetMapping("/employees/branch/{branchId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UserResponse>> getEmployeesByBranch(
             @PathVariable Long branchId) {
 
@@ -106,6 +113,7 @@ public class UserController {
     // =========================================================
 
     @PatchMapping("/{id}/activate")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponse> activate(
             @PathVariable Long id) {
 
@@ -120,6 +128,7 @@ public class UserController {
     // =========================================================
 
     @PatchMapping("/{id}/deactivate")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponse> deactivate(
             @PathVariable Long id) {
 

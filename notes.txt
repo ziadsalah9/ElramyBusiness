@@ -14,3 +14,15 @@
 
 
 ///just put for each endpoint is for admin or EMPLOYEE
+
+
+// 3 - 6 months 1 year --> dynamic percentage for installment .
+-- maybe  pay deposit (optional) . default 0 .
+
+// retry req ==> sales invoice .
+
+// تقفيل الخزنه
+
+
+
+

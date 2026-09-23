@@ -98,6 +98,13 @@ public class JwtAuthenticationFilter
                     userDetailsService
                             .loadUserByUsername(username);
 
+            System.out.println(
+                    "USERNAME: " + userDetails.getUsername()
+            );
+
+            System.out.println(
+                    "AUTHORITIES: " + userDetails.getAuthorities()
+            );
 
             // =================================================
             // VALIDATE TOKEN

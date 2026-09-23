@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,6 +19,7 @@ public class ProductController {
     private final ProductService productService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     public ProductResponse create(
             @Valid @RequestBody CreateProductRequest request) {
@@ -26,6 +28,7 @@ public class ProductController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ProductResponse update(
             @PathVariable Long id,
             @Valid @RequestBody UpdateProductRequest request) {
@@ -34,6 +37,7 @@ public class ProductController {
     }
 
     @PostMapping("/{id}/price")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProductResponse> createPrice(
             @PathVariable Long id,
             @RequestBody CreateProductPriceRequest request
@@ -50,6 +54,7 @@ public class ProductController {
     }
 
     @PatchMapping("/{id}/price")
+    @PreAuthorize("hasRole('ADMIN')")
     public ProductResponse updatePrice(
             @PathVariable Long id,
             @Valid @RequestBody UpdatePriceRequest request) {
@@ -58,18 +63,21 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
     public ProductResponse getById(@PathVariable Long id) {
 
         return productService.getById(id);
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
     public List<ProductResponse> getAll() {
 
         return productService.getAll();
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
     public List<ProductResponse> search(
             @RequestParam String keyword) {
 
@@ -77,12 +85,10 @@ public class ProductController {
     }
 
     @PatchMapping("/{id}/toggle-status")
+    @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void toggleStatus(@PathVariable Long id) {
 
         productService.toggleStatus(id);
     }
-
-
-
 }
