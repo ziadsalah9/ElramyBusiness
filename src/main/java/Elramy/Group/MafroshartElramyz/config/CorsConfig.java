@@ -24,7 +24,7 @@ public class CorsConfig {
                 "http://localhost:5173",
              "http://localhost:3000",
                 "https://admin-buddy-62.lovable.app",
-                "https://arabic-furniture-man-98a2.bolt.host"
+                "https://arabic-furniture-man-98a2.bolt.host",
                 "*"
         ));
 
