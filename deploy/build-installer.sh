@@ -12,10 +12,11 @@ SHOP="$(cd "$BACKEND/.." && pwd)"
 CACHE="$SHOP/.local-dev/installer-cache"
 JRE_ZIP="$CACHE/OpenJDK21U-jre_x64_windows_hotspot_21.0.12.1_1.zip"
 PG_ZIP="$CACHE/postgresql-16.15-1-windows-x64-binaries.zip"
+VC_REDIST="$CACHE/vc_redist.x64.exe"   # Microsoft Visual C++ 2015-2022 x64 (aka.ms/vs/17/release/vc_redist.x64.exe)
 WORK="$SHOP/.local-dev/installer-build"
 VERSION="1.0.$(date +%y%m).$(date +%d%H)"
 
-for z in "$JRE_ZIP" "$PG_ZIP"; do
+for z in "$JRE_ZIP" "$PG_ZIP" "$VC_REDIST"; do
   [ -f "$z" ] || { echo "Missing $z" >&2; exit 1; }
   echo "$(cat "$z.sha256" | awk '{print $1}')  $z" | shasum -a 256 -c --quiet -
 done
@@ -35,7 +36,11 @@ cp -R "$WORK"/unzip/jre/*/. "$WORK/stage/jre/"
 unzip -q "$PG_ZIP" -d "$WORK/unzip" -x 'pgsql/pgAdmin*' 'pgsql/StackBuilder*' 'pgsql/doc/*' 'pgsql/include/*'
 cp -R "$WORK"/unzip/pgsql/. "$WORK/stage/pgsql/"
 rm -rf "$WORK/unzip"
-for f in stage/jre/bin/java.exe stage/pgsql/bin/initdb.exe stage/pgsql/bin/pg_ctl.exe stage/pgsql/bin/pg_dump.exe stage/pgsql/bin/pg_restore.exe stage/pgsql/bin/psql.exe stage/app/elramy.jar stage/app/setup-elramy.ps1; do
+# PostgreSQL needs the VC++ runtime: Setup installs vc_redist, and as a fallback the
+# same DLLs (shipped with the JRE) sit next to the PostgreSQL programs (app-local).
+cp "$WORK"/stage/jre/bin/{vcruntime140.dll,vcruntime140_1.dll,msvcp140.dll} "$WORK/stage/pgsql/bin/"
+cp "$VC_REDIST" "$WORK/stage/"
+for f in stage/jre/bin/java.exe stage/pgsql/bin/initdb.exe stage/pgsql/bin/pg_ctl.exe stage/pgsql/bin/pg_dump.exe stage/pgsql/bin/pg_restore.exe stage/pgsql/bin/psql.exe stage/app/elramy.jar stage/app/setup-elramy.ps1 stage/pgsql/bin/vcruntime140.dll stage/vc_redist.x64.exe; do
   [ -f "$WORK/$f" ] || { echo "Staging incomplete: $f" >&2; exit 1; }
 done
 cp "$HERE/installer/elramy.iss" "$WORK/"

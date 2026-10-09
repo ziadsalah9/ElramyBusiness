@@ -4,6 +4,7 @@
 ;   app\   the store (Spring Boot jar serving the web app) + scripts
 ;   jre\   Java 21 runtime (Eclipse Temurin), private to the store
 ;   pgsql\ PostgreSQL 16 (EDB binaries), run as the "ElramyPostgreSQL" service
+; plus the Microsoft Visual C++ runtime PostgreSQL needs (installed if missing),
 ; then runs app\setup-elramy.ps1 (database, secrets, autostart, backups).
 ; Uninstall removes the program but KEEPS pgdata, backups and secrets.
 
@@ -52,6 +53,8 @@ ar.RestoreBackup=استرجاع نسخة احتياطية
 en.RestoreBackup=Restore a backup
 ar.BackupNow=نسخة احتياطية الآن
 en.BackupNow=Back up now
+ar.InstallingVC=جاري تثبيت مكتبات Microsoft Visual C++...
+en.InstallingVC=Installing the Microsoft Visual C++ runtime...
 ar.Logs=سجلات البرنامج
 en.Logs=Store logs
 
@@ -59,6 +62,7 @@ en.Logs=Store logs
 Source: "stage\app\*"; DestDir: "{app}\app"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "stage\jre\*"; DestDir: "{app}\jre"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "stage\pgsql\*"; DestDir: "{app}\pgsql"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "stage\vc_redist.x64.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall
 ; Used before files are replaced (upgrade): back up, stop the app and the database.
 Source: "stage\app\stop-elramy.ps1"; Flags: dontcopy
 
@@ -99,13 +103,29 @@ begin
        '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
 end;
 
-{ After the files are copied: database, secrets, autostart, backups, start. }
+{ PostgreSQL needs VCRUNTIME140.dll (Visual C++ 2015-2022 x64), which a fresh Windows may lack. }
+function VCRuntimeInstalled: Boolean;
+var
+  Installed: Cardinal;
+begin
+  Result := RegQueryDWordValue(HKLM64, 'SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64', 'Installed', Installed) and (Installed = 1);
+end;
+
+{ After the files are copied: VC++ runtime, then database, secrets, autostart, backups, start. }
 procedure CurStepChanged(CurStep: TSetupStep);
 var
   ResultCode: Integer;
 begin
   if CurStep = ssPostInstall then
   begin
+    if not VCRuntimeInstalled then
+    begin
+      WizardForm.StatusLabel.Caption := CustomMessage('InstallingVC');
+      { 0 ok, 1638 newer already there, 3010 ok after a restart. Failure is logged only:
+        the same DLLs are also copied next to PostgreSQL as a fallback. }
+      Exec(ExpandConstant('{tmp}\vc_redist.x64.exe'), '/install /quiet /norestart', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+      Log('vc_redist exit code: ' + IntToStr(ResultCode));
+    end;
     WizardForm.StatusLabel.Caption := CustomMessage('SettingUp');
     if not Exec('powershell.exe', '-NoProfile -ExecutionPolicy Bypass -File "' + ExpandConstant('{app}\app\setup-elramy.ps1') + '"',
                 '', SW_HIDE, ewWaitUntilTerminated, ResultCode) or (ResultCode <> 0) then

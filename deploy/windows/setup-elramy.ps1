@@ -34,12 +34,17 @@ try {
         Set-Content -Path $portFile -Value $dbPort -Encoding ASCII -NoNewline
         if (-not (Test-Path $superFile)) { Set-Content -Path $superFile -Value (New-RandomSecret 24) -Encoding ASCII -NoNewline }
 
+        # A previous attempt may have left a half-made folder: keep it aside, initdb needs an empty one.
+        if ((Test-Path $PgDataDir) -and (Get-ChildItem $PgDataDir -Force | Select-Object -First 1)) {
+            Rename-Item $PgDataDir ("pgdata.failed-" + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+        }
         New-Item -ItemType Directory -Force -Path $PgDataDir | Out-Null
         $pwFile = Join-Path $SecretsDir 'initdb.tmp'
         Set-Content -Path $pwFile -Value (Read-Secret 'pg-super.secret') -Encoding ASCII -NoNewline
         & (Join-Path $pgBin 'initdb.exe') -D $PgDataDir -U postgres --pwfile=$pwFile -E UTF8 --locale=C --auth=scram-sha-256
         $code = $LASTEXITCODE
         Remove-Item $pwFile -Force
+        if ($code -eq -1073741515) { throw 'initdb could not start: a DLL is missing (install the Microsoft Visual C++ 2015-2022 x64 runtime).' }
         if ($code -ne 0) { throw "initdb failed (exit $code)" }
         # Only this laptop connects.
         Add-Content -Path (Join-Path $PgDataDir 'postgresql.conf') -Value "`r`nlisten_addresses = 'localhost'`r`nport = $dbPort`r`n"
