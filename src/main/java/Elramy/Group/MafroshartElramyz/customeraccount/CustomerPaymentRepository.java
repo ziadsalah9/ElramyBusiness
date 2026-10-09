@@ -24,4 +24,9 @@ public interface CustomerPaymentRepository extends JpaRepository<CustomerPayment
     List<CustomerPayment> findAllByOrderByCreatedAtDesc();
 
     long countByPaymentNumberStartingWith(String prefix);
+
+    List<CustomerPayment> findByCreatedAtGreaterThanEqualAndCreatedAtLessThan(LocalDateTime from, LocalDateTime to);
+
+    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM CustomerPayment p")
+    BigDecimal sumAll();
 }

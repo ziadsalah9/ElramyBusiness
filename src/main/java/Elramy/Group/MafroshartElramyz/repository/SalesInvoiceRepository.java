@@ -37,4 +37,14 @@ public interface SalesInvoiceRepository
                                                 @org.springframework.data.repository.query.Param("to") java.time.LocalDateTime to);
 
     List<SalesInvoice> findByCustomerIdOrderByCreatedAtAsc(Long customerId);
+
+    /** Sales in [from, to) with their lines and products, for reports. */
+    @org.springframework.data.jpa.repository.Query("SELECT DISTINCT i FROM SalesInvoice i LEFT JOIN FETCH i.items it LEFT JOIN FETCH it.product"
+            + " WHERE i.createdAt >= :from AND i.createdAt < :to")
+    List<SalesInvoice> findInRangeWithItems(@org.springframework.data.repository.query.Param("from") java.time.LocalDateTime from,
+                                            @org.springframework.data.repository.query.Param("to") java.time.LocalDateTime to);
+
+    /** All customers together: unpaid on invoices (before payments and return credits). */
+    @org.springframework.data.jpa.repository.Query("SELECT COALESCE(SUM(i.total - i.paid), 0) FROM SalesInvoice i")
+    java.math.BigDecimal sumUnpaid();
 }

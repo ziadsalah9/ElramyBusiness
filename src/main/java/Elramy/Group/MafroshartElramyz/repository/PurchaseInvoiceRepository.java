@@ -11,4 +11,6 @@ public interface PurchaseInvoiceRepository
     boolean existsByInvoiceNumber(String invoiceNumber);
 
     Optional<PurchaseInvoice> findByInvoiceNumber(String invoiceNumber);
+
+    java.util.List<PurchaseInvoice> findByCreatedAtGreaterThanEqualAndCreatedAtLessThan(java.time.LocalDateTime from, java.time.LocalDateTime to);
 }

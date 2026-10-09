@@ -12,4 +12,7 @@ public interface StocktakeRepository extends JpaRepository<Stocktake, Long> {
     Optional<Stocktake> findFirstByStatus(StocktakeStatus status);
 
     long countByCodeStartingWith(String prefix);
+
+    List<Stocktake> findByStatusAndApprovedAtGreaterThanEqualAndApprovedAtLessThanOrderByApprovedAtDesc(
+            StocktakeStatus status, java.time.LocalDateTime from, java.time.LocalDateTime to);
 }
