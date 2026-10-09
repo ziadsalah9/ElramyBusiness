@@ -47,6 +47,7 @@ public class SalesInvoiceServiceImpl
     private final UserService userService;
     private final ActivityLogService activityLog;
     private final Elramy.Group.MafroshartElramyz.settings.StoreSettingsService storeSettings;
+    private final Elramy.Group.MafroshartElramyz.installment.InstallmentService installments;
 
 
     // =========================================================
@@ -79,6 +80,10 @@ public class SalesInvoiceServiceImpl
 
         User currentUser =
                 userService.getCurrentUser();
+
+        if (request.installment() != null && currentUser.getRole() != Role.ADMIN) {
+            throw new Elramy.Group.MafroshartElramyz.exception.UnauthorizedException("البيع بالتقسيط متاح للمدير فقط.");
+        }
 
         if (currentUser.getRole() != Role.ADMIN) {
 
@@ -352,6 +357,15 @@ public class SalesInvoiceServiceImpl
         // =========================================================
 
         salesInvoiceRepository.save(invoice);
+
+
+        // =========================================================
+        // INSTALLMENT PLAN (what is not paid now, split by month)
+        // =========================================================
+
+        if (request.installment() != null) {
+            installments.createPlan(invoice, request.installment(), currentUser);
+        }
 
 
         // =========================================================

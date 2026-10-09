@@ -28,7 +28,7 @@ public final class CustomerAccountDtos {
             String receivedByName, LocalDateTime createdAt, BigDecimal balanceAfter) {
     }
 
-    public enum EntryType { INVOICE, PAYMENT, RETURN }
+    public enum EntryType { INVOICE, PAYMENT, RETURN, INSTALLMENT_MARKUP }
 
     /** One line of the statement; {@code amount} is what it adds to (or, negative, takes off) the balance. */
     public record StatementEntry(

@@ -52,6 +52,7 @@ public class ReportService {
     private final StockTransactionRepository ledger;
     private final StocktakeRepository stocktakes;
     private final Elramy.Group.MafroshartElramyz.expense.ExpenseRepository expenseRepository;
+    private final Elramy.Group.MafroshartElramyz.installment.InstallmentRepository installmentPlans;
 
     public Report build(LocalDate from, LocalDate to) {
         if (to.isBefore(from)) throw new IllegalArgumentException("تاريخ النهاية قبل تاريخ البداية.");
@@ -120,7 +121,7 @@ public class ReportService {
         }
         BigDecimal bought = purchases.findByCreatedAtGreaterThanEqualAndCreatedAtLessThan(start, end).stream()
                 .map(PurchaseInvoice::getTotal).reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal outstanding = invoices.sumUnpaid().subtract(payments.sumAll()).subtract(returns.sumAllCredits());
+        BigDecimal outstanding = invoices.sumUnpaid().add(installmentPlans.sumAllMarkup()).subtract(payments.sumAll()).subtract(returns.sumAllCredits());
 
         BigDecimal net = sales.subtract(returned);
         BigDecimal profit = days.values().stream().map(d -> d.profit).reduce(BigDecimal.ZERO, BigDecimal::add);

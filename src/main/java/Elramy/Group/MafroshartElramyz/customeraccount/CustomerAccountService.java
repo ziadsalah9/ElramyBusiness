@@ -48,10 +48,13 @@ public class CustomerAccountService {
     private final BranchRepository branches;
     private final UserService userService;
     private final ActivityLogService activityLog;
+    private final Elramy.Group.MafroshartElramyz.installment.InstallmentRepository installmentPlans;
+    private final Elramy.Group.MafroshartElramyz.installment.InstallmentService installments;
 
     @Transactional(readOnly = true)
     public BigDecimal balance(Long customerId) {
         return invoices.sumUnpaidByCustomer(customerId)
+                .add(installmentPlans.sumMarkupByCustomer(customerId))
                 .subtract(payments.sumByCustomer(customerId))
                 .subtract(returns.sumCreditByCustomer(customerId))
                 .setScale(2, RoundingMode.HALF_UP);
@@ -85,6 +88,8 @@ public class CustomerAccountService {
                 .receivedBy(userService.getCurrentUser())
                 .build());
         BigDecimal after = owed.subtract(amount);
+        // Installments: the payment settles the oldest unpaid ones first.
+        installments.allocatePayment(customerId, amount, java.time.LocalDateTime.now());
 
         activityLog.record(ActivityEntity.CUSTOMER_PAYMENT, ActivityAction.CREATE, saved.getId(),
                 saved.getPaymentNumber(), "تحصيل " + plain(amount) + " ج.م من العميل «" + customer.getName() + "»",
@@ -104,6 +109,12 @@ public class CustomerAccountService {
             BigDecimal unpaid = i.getTotal().subtract(i.getPaid());
             raw.add(new StatementEntry(EntryType.INVOICE, i.getId(), i.getInvoiceNumber(), i.getCreatedAt(),
                     "فاتورة بإجمالي " + plain(i.getTotal()) + "، مدفوع " + plain(i.getPaid()), unpaid, null));
+        }
+        for (Elramy.Group.MafroshartElramyz.installment.InstallmentPlan plan : installmentPlans.findByCustomerIdOrderByCreatedAtAsc(customerId)) {
+            if (plan.getMarkupAmount().signum() == 0) continue;
+            invoiced = invoiced.add(plan.getMarkupAmount());
+            raw.add(new StatementEntry(EntryType.INSTALLMENT_MARKUP, plan.getId(), plan.getInvoice().getInvoiceNumber(), plan.getCreatedAt(),
+                    "زيادة التقسيط " + plain(plan.getMarkupPercent()) + "% على " + plan.getMonths() + " شهر", plan.getMarkupAmount(), null));
         }
         for (CustomerPayment p : payments.findByCustomerIdOrderByCreatedAtAsc(customerId)) {
             later = later.add(p.getAmount());

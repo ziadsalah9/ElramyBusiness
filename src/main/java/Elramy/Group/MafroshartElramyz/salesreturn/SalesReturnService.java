@@ -44,6 +44,7 @@ public class SalesReturnService {
     private final CustomerAccountService accounts;
     private final UserService userService;
     private final ActivityLogService activityLog;
+    private final Elramy.Group.MafroshartElramyz.installment.InstallmentService installments;
 
     public ReturnResponse create(Long invoiceId, ReturnRequest request) {
         SalesInvoice invoice = invoices.findById(invoiceId).orElseThrow(() -> new SalesInvoiceNotFoundException(invoiceId));
@@ -104,6 +105,8 @@ public class SalesReturnService {
         ret.setCashRefund(value.subtract(credit));
         invoice.setReturnedTotal(invoice.getReturnedTotal().add(value));
         SalesReturn saved = returns.save(ret);
+        // On an installment sale the credit shortens the plan from its end.
+        installments.reduceForReturn(invoice.getId(), credit);
 
         // Back on the shelf, locked in variant order like a sale.
         for (SalesReturnItem item : saved.getItems().stream()

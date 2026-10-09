@@ -40,8 +40,10 @@ class ReportServiceTest {
         ProductRepository products = mock(ProductRepository.class);
         StocktakeRepository stocktakes = mock(StocktakeRepository.class);
         Elramy.Group.MafroshartElramyz.expense.ExpenseRepository expenses = mock(Elramy.Group.MafroshartElramyz.expense.ExpenseRepository.class);
+        Elramy.Group.MafroshartElramyz.installment.InstallmentRepository plans = mock(Elramy.Group.MafroshartElramyz.installment.InstallmentRepository.class);
+        when(plans.sumAllMarkup()).thenReturn(BigDecimal.ZERO);
         ReportService service = new ReportService(invoices, returns, payments, purchases, products,
-                mock(StockTransactionRepository.class), stocktakes, expenses);
+                mock(StockTransactionRepository.class), stocktakes, expenses, plans);
         when(expenses.findByExpenseDateBetweenOrderByExpenseDateDescIdDesc(any(), any())).thenReturn(List.of(
                 Elramy.Group.MafroshartElramyz.expense.Expense.builder().category(Elramy.Group.MafroshartElramyz.expense.ExpenseCategory.RENT)
                         .amount(new BigDecimal("12")).build()));
@@ -94,7 +96,8 @@ class ReportServiceTest {
     void rangesAreValidated() {
         ReportService service = new ReportService(mock(SalesInvoiceRepository.class), mock(SalesReturnRepository.class),
                 mock(CustomerPaymentRepository.class), mock(PurchaseInvoiceRepository.class), mock(ProductRepository.class),
-                mock(StockTransactionRepository.class), mock(StocktakeRepository.class), mock(Elramy.Group.MafroshartElramyz.expense.ExpenseRepository.class));
+                mock(StockTransactionRepository.class), mock(StocktakeRepository.class), mock(Elramy.Group.MafroshartElramyz.expense.ExpenseRepository.class),
+                mock(Elramy.Group.MafroshartElramyz.installment.InstallmentRepository.class));
         assertThrows(IllegalArgumentException.class, () -> service.build(LocalDate.of(2026, 2, 1), LocalDate.of(2026, 1, 1)));
         assertThrows(IllegalArgumentException.class, () -> service.build(LocalDate.of(2025, 1, 1), LocalDate.of(2026, 1, 2)));
     }

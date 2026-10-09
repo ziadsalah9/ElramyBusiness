@@ -39,7 +39,17 @@ public record SalesInvoiceRequest(
 
         /** Cash part of {@code paid}; required for MIXED, ignored otherwise. */
         @DecimalMin(value = "0.0", message = "المبلغ النقدي لا يمكن أن يكون سالباً")
-        BigDecimal cashAmount
+        BigDecimal cashAmount,
+
+        /** Sell on installments (ADMIN): what is not paid now becomes a monthly plan. */
+        @Valid
+        Elramy.Group.MafroshartElramyz.installment.InstallmentDtos.InstallmentRequest installment
 
 ) {
+
+    public SalesInvoiceRequest(Long branchId, CustomerInvoiceRequest customer, PaymentMethod paymentMethod,
+                               List<SalesInvoiceItemRequest> items, BigDecimal discount, BigDecimal paid, String notes,
+                               BigDecimal cashAmount) {
+        this(branchId, customer, paymentMethod, items, discount, paid, notes, cashAmount, null);
+    }
 }

@@ -34,6 +34,7 @@ class SalesInvoiceServiceImplTest {
     private SalesInvoiceServiceImpl service;
     private User admin;
     private User employee;
+    private Elramy.Group.MafroshartElramyz.installment.InstallmentService installments;
 
     @BeforeEach
     void setUp() {
@@ -44,9 +45,10 @@ class SalesInvoiceServiceImplTest {
         stock = mock(StockService.class);
         users = mock(UserService.class);
         StoreSettingsService settings = mock(StoreSettingsService.class);
+        installments = mock(Elramy.Group.MafroshartElramyz.installment.InstallmentService.class);
         when(settings.employeeMaxDiscountPercent()).thenReturn(BigDecimal.TEN);
         service = new SalesInvoiceServiceImpl(invoices, mock(ProductRepository.class), variants, branches, stock,
-                mock(SalesInvoiceMapper.class), customers, users, mock(ActivityLogService.class), settings);
+                mock(SalesInvoiceMapper.class), customers, users, mock(ActivityLogService.class), settings, installments);
 
         Branch branch = Branch.builder().id(1L).name("فرع").active(true).build();
         when(branches.findById(1L)).thenReturn(Optional.of(branch));
@@ -146,5 +148,20 @@ class SalesInvoiceServiceImplTest {
         service.create(new SalesInvoiceRequest(1L, new CustomerInvoiceRequest("قديم", "011", null), PaymentMethod.CASH,
                 List.of(item(11L, 1, "0")), BigDecimal.ZERO, BigDecimal.ZERO, null, null));
         assertTrue(hidden.getActive());
+    }
+
+    @Test
+    void onlyAdminsSellOnInstallmentsAndThePlanIsCreatedFromTheSale() {
+        var plan = new Elramy.Group.MafroshartElramyz.installment.InstallmentDtos.InstallmentRequest(6, new BigDecimal("10"), null);
+        SalesInvoiceRequest onInstallments = new SalesInvoiceRequest(1L, new CustomerInvoiceRequest("محمد", "010", null), PaymentMethod.CASH,
+                List.of(item(11L, 1, "0")), BigDecimal.ZERO, new BigDecimal("40"), null, null, plan);
+
+        when(users.getCurrentUser()).thenReturn(employee);
+        assertThrows(Elramy.Group.MafroshartElramyz.exception.UnauthorizedException.class, () -> service.create(onInstallments));
+        verifyNoInteractions(installments);
+
+        when(users.getCurrentUser()).thenReturn(admin);
+        service.create(onInstallments);
+        verify(installments).createPlan(any(SalesInvoice.class), eq(plan), eq(admin));
     }
 }

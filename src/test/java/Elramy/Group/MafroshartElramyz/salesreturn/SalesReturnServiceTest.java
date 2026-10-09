@@ -25,6 +25,7 @@ class SalesReturnServiceTest {
     private StockService stock;
     private CustomerAccountService accounts;
     private SalesReturnService service;
+    private Elramy.Group.MafroshartElramyz.installment.InstallmentService installments;
     private SalesInvoice invoice;
     private SalesInvoiceItem quilts;   // 2 x 100
     private SalesInvoiceItem towel;    // 1 x 50
@@ -35,7 +36,8 @@ class SalesReturnServiceTest {
         SalesInvoiceRepository invoices = mock(SalesInvoiceRepository.class);
         stock = mock(StockService.class);
         accounts = mock(CustomerAccountService.class);
-        service = new SalesReturnService(returns, invoices, stock, accounts, mock(UserService.class), mock(ActivityLogService.class));
+        installments = mock(Elramy.Group.MafroshartElramyz.installment.InstallmentService.class);
+        service = new SalesReturnService(returns, invoices, stock, accounts, mock(UserService.class), mock(ActivityLogService.class), installments);
 
         Customer customer = Customer.builder().id(3L).name("محمد").phone("010").build();
         Product p = Product.builder().id(1L).name("لحاف").build();
@@ -77,6 +79,7 @@ class SalesReturnServiceTest {
         assertEquals(0, new BigDecimal("225.00").compareTo(r.total()));
         assertEquals(0, new BigDecimal("100.00").compareTo(r.creditAmount()));
         assertEquals(0, new BigDecimal("125.00").compareTo(r.cashRefund()));
+        verify(installments).reduceForReturn(eq(9L), eq(new BigDecimal("100.00")));
     }
 
     @Test
