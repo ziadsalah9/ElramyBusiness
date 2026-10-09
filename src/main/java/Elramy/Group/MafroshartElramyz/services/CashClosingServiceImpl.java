@@ -37,6 +37,8 @@ public class CashClosingServiceImpl implements CashClosingService {
     private final SalesInvoiceRepository salesInvoiceRepository;
     private final Elramy.Group.MafroshartElramyz.customeraccount.CustomerPaymentRepository paymentRepository;
     private final Elramy.Group.MafroshartElramyz.salesreturn.SalesReturnRepository returnRepository;
+    private final Elramy.Group.MafroshartElramyz.expense.ExpenseRepository expenseRepository;
+    private final Elramy.Group.MafroshartElramyz.supplier.SupplierPaymentRepository supplierPaymentRepository;
     private final CashClosingMapper cashClosingMapper;
     private final UserService userService;
     private final ActivityLogService activityLog;
@@ -179,14 +181,16 @@ public class CashClosingServiceImpl implements CashClosingService {
     /**
      * Cash that should be in the drawer for the day: cash taken at sales
      * (the cash part of MIXED included), plus cash customer payments, minus
-     * cash handed back for returns.
+     * cash handed back for returns, cash expenses and cash paid to suppliers.
      */
     private BigDecimal calculateCashSalesTotal(Long branchId, LocalDate date) {
         LocalDateTime from = date.atStartOfDay();
         LocalDateTime to = date.plusDays(1).atStartOfDay();
         return salesInvoiceRepository.sumCashByBranchBetween(branchId, from, to)
                 .add(paymentRepository.sumByBranchAndMethodBetween(branchId, PaymentMethod.CASH, from, to))
-                .subtract(returnRepository.sumCashRefundByBranchBetween(branchId, from, to));
+                .subtract(returnRepository.sumCashRefundByBranchBetween(branchId, from, to))
+                .subtract(expenseRepository.sumByBranchMethodAndDay(branchId, PaymentMethod.CASH, date))
+                .subtract(supplierPaymentRepository.sumByBranchAndMethodBetween(branchId, PaymentMethod.CASH, from, to));
     }
 
     private long n(Integer v) {

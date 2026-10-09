@@ -29,7 +29,11 @@ public class PurchaseInvoiceImportController {
     public ResponseEntity<List<PurchaseInvoiceResponse>> importFile(
 
             @RequestParam("file")
-            MultipartFile file
+            MultipartFile file,
+
+            /** Every imported invoice is from this supplier (V20). */
+            @RequestParam("supplierId")
+            Long supplierId
 
     ) {
 
@@ -37,7 +41,7 @@ public class PurchaseInvoiceImportController {
                 .status(HttpStatus.CREATED)
                 .body(
                         purchaseInvoiceImportService
-                                .importFile(file)
+                                .importFile(file, supplierId)
                 );
     }
 }

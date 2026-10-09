@@ -51,6 +51,7 @@ public class ReportService {
     private final ProductRepository products;
     private final StockTransactionRepository ledger;
     private final StocktakeRepository stocktakes;
+    private final Elramy.Group.MafroshartElramyz.expense.ExpenseRepository expenseRepository;
 
     public Report build(LocalDate from, LocalDate to) {
         if (to.isBefore(from)) throw new IllegalArgumentException("تاريخ النهاية قبل تاريخ البداية.");
@@ -125,8 +126,18 @@ public class ReportService {
         BigDecimal profit = days.values().stream().map(d -> d.profit).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal margin = net.signum() == 0 ? BigDecimal.ZERO : profit.multiply(BigDecimal.valueOf(100)).divide(net, 2, RoundingMode.HALF_UP);
 
+        // Expenses by their own date (not when they were typed in).
+        Map<Elramy.Group.MafroshartElramyz.expense.ExpenseCategory, ExpenseAcc> byCategory = new EnumMap<>(Elramy.Group.MafroshartElramyz.expense.ExpenseCategory.class);
+        BigDecimal spent = BigDecimal.ZERO;
+        for (Elramy.Group.MafroshartElramyz.expense.Expense e : expenseRepository.findByExpenseDateBetweenOrderByExpenseDateDescIdDesc(from, to)) {
+            spent = spent.add(e.getAmount());
+            ExpenseAcc acc = byCategory.computeIfAbsent(e.getCategory(), k -> new ExpenseAcc());
+            acc.count++;
+            acc.amount = acc.amount.add(e.getAmount());
+        }
+
         Summary summary = new Summary(sold.size(), m(gross), m(discounts), m(returned), m(net), m(cost), m(profit), margin,
-                m(cash), m(paidLater), m(bought), m(outstanding.max(BigDecimal.ZERO)), missingCost);
+                m(cash), m(paidLater), m(bought), m(outstanding.max(BigDecimal.ZERO)), missingCost, m(spent), m(profit.subtract(spent)));
 
         List<Day> dayList = days.entrySet().stream().map(e -> new Day(e.getKey(), e.getValue().invoices, m(e.getValue().sales),
                 m(e.getValue().returns), m(e.getValue().sales.subtract(e.getValue().returns)), m(e.getValue().profit))).toList();
@@ -143,7 +154,11 @@ public class ReportService {
                 .stream().map(s -> new StocktakeResult(s.getId(), s.getCode(), s.getTitle(), s.getApprovedAt(), s.getShortageCost(), s.getSurplusCost()))
                 .toList();
 
-        return new Report(from, to, summary, dayList, top, slowMovers(), methods, counts);
+        List<ExpenseShare> expenseShares = byCategory.entrySet().stream()
+                .sorted(Map.Entry.<Elramy.Group.MafroshartElramyz.expense.ExpenseCategory, ExpenseAcc>comparingByValue(
+                        Comparator.comparing((ExpenseAcc a) -> a.amount)).reversed())
+                .map(e -> new ExpenseShare(e.getKey(), e.getValue().count, m(e.getValue().amount))).toList();
+        return new Report(from, to, summary, dayList, top, slowMovers(), methods, counts, expenseShares);
     }
 
     /** Products in stock that have not sold for SLOW_DAYS days (or never), most stock value first. */
@@ -185,6 +200,11 @@ public class ReportService {
         int quantity;
         BigDecimal revenue = BigDecimal.ZERO, profit = BigDecimal.ZERO;
         ProductAcc(Product product) { this.product = product; }
+    }
+
+    private static final class ExpenseAcc {
+        int count;
+        BigDecimal amount = BigDecimal.ZERO;
     }
 
     private static final class PayAcc {

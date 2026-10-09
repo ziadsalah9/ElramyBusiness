@@ -16,6 +16,10 @@ public record CreatePurchaseInvoiceRequest(
         @NotNull(message = "Branch is required")
         Long branchId,
 
+        /** Who we buy from (V20); required on new purchases. */
+        @NotNull(message = "اختر المورد")
+        Long supplierId,
+
         @DecimalMin(value = "0.0", message = "Invoice discount cannot be negative")
         BigDecimal discount,
 

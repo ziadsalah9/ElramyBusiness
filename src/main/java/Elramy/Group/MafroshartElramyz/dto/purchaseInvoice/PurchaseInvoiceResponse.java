@@ -34,7 +34,12 @@ public record PurchaseInvoiceResponse(
 
         List<PurchaseInvoiceItemResponse> items,
 
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+
+        /** Null on purchases made before suppliers existed. */
+        Long supplierId,
+
+        String supplierName
 
 ) {
 }

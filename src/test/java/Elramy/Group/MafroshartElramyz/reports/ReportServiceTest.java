@@ -39,8 +39,12 @@ class ReportServiceTest {
         PurchaseInvoiceRepository purchases = mock(PurchaseInvoiceRepository.class);
         ProductRepository products = mock(ProductRepository.class);
         StocktakeRepository stocktakes = mock(StocktakeRepository.class);
+        Elramy.Group.MafroshartElramyz.expense.ExpenseRepository expenses = mock(Elramy.Group.MafroshartElramyz.expense.ExpenseRepository.class);
         ReportService service = new ReportService(invoices, returns, payments, purchases, products,
-                mock(StockTransactionRepository.class), stocktakes);
+                mock(StockTransactionRepository.class), stocktakes, expenses);
+        when(expenses.findByExpenseDateBetweenOrderByExpenseDateDescIdDesc(any(), any())).thenReturn(List.of(
+                Elramy.Group.MafroshartElramyz.expense.Expense.builder().category(Elramy.Group.MafroshartElramyz.expense.ExpenseCategory.RENT)
+                        .amount(new BigDecimal("12")).build()));
 
         LocalDate day = LocalDate.of(2026, 10, 9);
         LocalDateTime at = day.atTime(12, 0);
@@ -77,6 +81,9 @@ class ReportServiceTest {
         eq("30", s.grossProfit());       // (180 - 120) - (90 - 60)
         eq("30", s.cashIn());            // 100 cash at sale + 20 payment - 90 refund
         eq("10", s.outstandingBalances()); // 30 unpaid - 20 paid later
+        eq("12", s.expenses());
+        eq("18", s.netProfit());          // 30 gross profit - 12 rent
+        assertEquals(1, r.expenses().size());
         assertEquals(1, r.topProducts().size());
         assertEquals(1, r.topProducts().get(0).quantity());
         assertEquals(1, r.days().size());
@@ -87,7 +94,7 @@ class ReportServiceTest {
     void rangesAreValidated() {
         ReportService service = new ReportService(mock(SalesInvoiceRepository.class), mock(SalesReturnRepository.class),
                 mock(CustomerPaymentRepository.class), mock(PurchaseInvoiceRepository.class), mock(ProductRepository.class),
-                mock(StockTransactionRepository.class), mock(StocktakeRepository.class));
+                mock(StockTransactionRepository.class), mock(StocktakeRepository.class), mock(Elramy.Group.MafroshartElramyz.expense.ExpenseRepository.class));
         assertThrows(IllegalArgumentException.class, () -> service.build(LocalDate.of(2026, 2, 1), LocalDate.of(2026, 1, 1)));
         assertThrows(IllegalArgumentException.class, () -> service.build(LocalDate.of(2025, 1, 1), LocalDate.of(2026, 1, 2)));
     }

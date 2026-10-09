@@ -43,7 +43,11 @@ class CashClosingServiceImplTest {
         when(sales.sumCashByBranchBetween(anyLong(), any(), any())).thenReturn(BigDecimal.ZERO);
         when(payments.sumByBranchAndMethodBetween(anyLong(), any(), any(), any())).thenReturn(BigDecimal.ZERO);
         when(returns.sumCashRefundByBranchBetween(anyLong(), any(), any())).thenReturn(BigDecimal.ZERO);
-        service = new CashClosingServiceImpl(closings, branches, sales, payments, returns, mock(CashClosingMapper.class), users, mock(ActivityLogService.class));
+        Elramy.Group.MafroshartElramyz.expense.ExpenseRepository expenses = mock(Elramy.Group.MafroshartElramyz.expense.ExpenseRepository.class);
+        Elramy.Group.MafroshartElramyz.supplier.SupplierPaymentRepository supplierPays = mock(Elramy.Group.MafroshartElramyz.supplier.SupplierPaymentRepository.class);
+        when(expenses.sumByBranchMethodAndDay(anyLong(), any(), any())).thenReturn(BigDecimal.ZERO);
+        when(supplierPays.sumByBranchAndMethodBetween(anyLong(), any(), any(), any())).thenReturn(BigDecimal.ZERO);
+        service = new CashClosingServiceImpl(closings, branches, sales, payments, returns, expenses, supplierPays, mock(CashClosingMapper.class), users, mock(ActivityLogService.class));
 
         Branch branch = Branch.builder().id(1L).name("فرع كوم حماة").build();
         when(branches.findById(1L)).thenReturn(Optional.of(branch));

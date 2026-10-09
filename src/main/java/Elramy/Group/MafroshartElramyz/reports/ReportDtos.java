@@ -21,7 +21,11 @@ public final class ReportDtos {
             /** What all customers owe right now (not limited to the range). */
             BigDecimal outstandingBalances,
             /** Sold lines whose product has no cost price: left out of the profit. */
-            int linesWithoutCost) {
+            int linesWithoutCost,
+            /** Shop expenses dated in the range. */
+            BigDecimal expenses,
+            /** Gross profit minus expenses. */
+            BigDecimal netProfit) {
     }
 
     public record Day(LocalDate date, int invoices, BigDecimal sales, BigDecimal returns, BigDecimal net, BigDecimal profit) {
@@ -40,7 +44,11 @@ public final class ReportDtos {
                                   BigDecimal shortageCost, BigDecimal surplusCost) {
     }
 
+    public record ExpenseShare(Elramy.Group.MafroshartElramyz.expense.ExpenseCategory category, int count, BigDecimal amount) {
+    }
+
     public record Report(LocalDate from, LocalDate to, Summary summary, List<Day> days, List<TopProduct> topProducts,
-                         List<SlowMover> slowMovers, List<PaymentShare> paymentMethods, List<StocktakeResult> stocktakes) {
+                         List<SlowMover> slowMovers, List<PaymentShare> paymentMethods, List<StocktakeResult> stocktakes,
+                         List<ExpenseShare> expenses) {
     }
 }

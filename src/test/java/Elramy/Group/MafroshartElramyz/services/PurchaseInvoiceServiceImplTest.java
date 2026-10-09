@@ -36,8 +36,10 @@ class PurchaseInvoiceServiceImplTest {
         BranchRepository branches = mock(BranchRepository.class);
         stock = mock(StockService.class);
         UserService users = mock(UserService.class);
+        Elramy.Group.MafroshartElramyz.supplier.SupplierService suppliers = mock(Elramy.Group.MafroshartElramyz.supplier.SupplierService.class);
         service = new PurchaseInvoiceServiceImpl(invoices, mock(ProductRepository.class), variants, branches,
-                mock(PurchaseInvoiceMapper.class), stock, users, mock(ActivityLogService.class));
+                mock(PurchaseInvoiceMapper.class), stock, users, mock(ActivityLogService.class), suppliers);
+        when(suppliers.activeSupplier(7L)).thenReturn(Elramy.Group.MafroshartElramyz.supplier.Supplier.builder().id(7L).name("مورد").active(true).build());
 
         User admin = new User();
         admin.setRole(Role.ADMIN);
@@ -49,7 +51,7 @@ class PurchaseInvoiceServiceImplTest {
     }
 
     private static CreatePurchaseInvoiceRequest purchase(String number, String discount, String paid, PurchaseInvoiceItemRequest... items) {
-        return new CreatePurchaseInvoiceRequest(number, 1L, new BigDecimal(discount), new BigDecimal(paid), PaymentMethod.CASH, null, List.of(items));
+        return new CreatePurchaseInvoiceRequest(number, 1L, 7L, new BigDecimal(discount), new BigDecimal(paid), PaymentMethod.CASH, null, List.of(items));
     }
 
     @Test
@@ -60,6 +62,7 @@ class PurchaseInvoiceServiceImplTest {
         verify(invoices).save(c.capture());
         assertEquals(0, new BigDecimal("100.00").compareTo(c.getValue().getItems().get(0).getTotal()));   // 99.999 -> 100.00
         assertEquals(2, c.getValue().getTotal().scale());
+        assertEquals(7L, c.getValue().getSupplier().getId(), "the purchase is linked to its supplier");
         verify(stock).increaseStock(eq(11L), eq(3), eq(TransactionType.STOCK_IN), any(), any(), anyString(), anyString());
     }
 

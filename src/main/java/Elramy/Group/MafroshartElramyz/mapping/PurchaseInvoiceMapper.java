@@ -53,7 +53,9 @@ public class PurchaseInvoiceMapper {
                         .map(this::toItemResponse)
                         .toList(),
 
-                invoice.getCreatedAt()
+                invoice.getCreatedAt(),
+                invoice.getSupplier() != null ? invoice.getSupplier().getId() : null,
+                invoice.getSupplier() != null ? invoice.getSupplier().getName() : null
         );
     }
 

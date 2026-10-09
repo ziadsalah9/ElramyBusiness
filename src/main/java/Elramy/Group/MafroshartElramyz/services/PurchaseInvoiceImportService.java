@@ -7,7 +7,5 @@ import java.util.List;
 
 public interface PurchaseInvoiceImportService {
 
-    List<PurchaseInvoiceResponse> importFile(
-            MultipartFile file
-    );
+    List<PurchaseInvoiceResponse> importFile(MultipartFile file, Long supplierId);
 }

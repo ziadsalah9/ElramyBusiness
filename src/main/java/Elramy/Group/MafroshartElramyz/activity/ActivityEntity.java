@@ -12,5 +12,8 @@ public enum ActivityEntity {
     STOCKTAKE,
     SALES_RETURN,
     CUSTOMER_PAYMENT,
-    SETTINGS
+    SETTINGS,
+    SUPPLIER,
+    EXPENSE,
+    INSTALLMENT
 }

@@ -50,6 +50,7 @@ public class PurchaseInvoiceServiceImpl
     private final StockService stockService;
     private final UserService userService;
     private final ActivityLogService activityLog;
+    private final Elramy.Group.MafroshartElramyz.supplier.SupplierService supplierService;
 
 
     // =========================================================
@@ -97,6 +98,7 @@ public class PurchaseInvoiceServiceImpl
                 PurchaseInvoice.builder()
                         .invoiceNumber(request.invoiceNumber())
                         .branch(branch)
+                        .supplier(supplierService.activeSupplier(request.supplierId()))
                         .discount(
                                 request.discount() != null
                                         ? request.discount()
@@ -324,14 +326,15 @@ public class PurchaseInvoiceServiceImpl
 
 
     @Override
-    public List<PurchaseInvoiceResponse> importInvoices(
-            List<PurchaseInvoiceImportRow> rows) {
+    public List<PurchaseInvoiceResponse> importInvoices(List<PurchaseInvoiceImportRow> rows, Long supplierId) {
 
         if (rows == null || rows.isEmpty()) {
             throw new IllegalArgumentException(
                     "No purchase invoice data found."
             );
         }
+
+        Elramy.Group.MafroshartElramyz.supplier.Supplier supplier = supplierService.activeSupplier(supplierId);
 
         /*
          * كل Invoice Number ممكن يكون له أكثر من Row
@@ -429,6 +432,7 @@ public class PurchaseInvoiceServiceImpl
                     PurchaseInvoice.builder()
                             .invoiceNumber(invoiceNumber)
                             .branch(branch)
+                            .supplier(supplier)
                             .discount(BigDecimal.ZERO)
                             .paid(BigDecimal.ZERO)
                             .paymentMethod(

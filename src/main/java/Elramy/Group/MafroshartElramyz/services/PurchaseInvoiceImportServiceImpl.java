@@ -30,8 +30,7 @@ public class PurchaseInvoiceImportServiceImpl
     // =========================================================
 
     @Override
-    public List<PurchaseInvoiceResponse> importFile(
-            MultipartFile file) {
+    public List<PurchaseInvoiceResponse> importFile(MultipartFile file, Long supplierId) {
 
         validateFile(file);
 
@@ -68,7 +67,7 @@ public class PurchaseInvoiceImportServiceImpl
 
 
             // هنا بنسلم البيانات للـ PurchaseInvoiceService
-            return purchaseInvoiceService.importInvoices(rows);
+            return purchaseInvoiceService.importInvoices(rows, supplierId);
 
         } catch (IOException e) {
 

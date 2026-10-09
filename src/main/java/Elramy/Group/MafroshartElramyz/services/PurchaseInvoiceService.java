@@ -23,8 +23,6 @@ public interface PurchaseInvoiceService {
     PurchaseInvoiceResponse getByInvoiceNumber(
             String invoiceNumber
     );
-    List<PurchaseInvoiceResponse> importInvoices(
-            List<PurchaseInvoiceImportRow> rows
-    );
+    List<PurchaseInvoiceResponse> importInvoices(List<PurchaseInvoiceImportRow> rows, Long supplierId);
 
 }
