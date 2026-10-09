@@ -91,8 +91,10 @@ try {
     $dbExists = & $psql -h localhost -p $dbPort -U postgres -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = '$DbName'"
     $newDatabase = -not ($dbExists -match '1')
     if ($newDatabase) {
-        & $psql -h localhost -p $dbPort -U postgres -d postgres -c "CREATE DATABASE `"$DbName`" OWNER $DbUser ENCODING 'UTF8' TEMPLATE template0" | Out-Null
+        Invoke-PgSql $pgBin 'postgres' 'postgres' "CREATE DATABASE `"$DbName`" OWNER $DbUser ENCODING 'UTF8' TEMPLATE template0;" | Out-Null
         if ($LASTEXITCODE -ne 0) { throw 'Creating the store database failed.' }
+        # Older setups created it in lowercase by mistake (empty, never used): remove that.
+        Invoke-PgSql $pgBin 'postgres' 'postgres' "DROP DATABASE IF EXISTS elramygroup;" | Out-Null
         Set-Content -Path (Join-Path $SecretsDir 'admin-initial.secret') -Value (New-RandomSecret 9) -Encoding ASCII -NoNewline
     }
     Remove-Item Env:\PGPASSWORD

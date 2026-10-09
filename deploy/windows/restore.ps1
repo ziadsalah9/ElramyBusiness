@@ -33,9 +33,9 @@ try {
 
     Write-Step 'Recreating the database'
     $psql = Join-Path $pgBin 'psql.exe'
-    & $psql -h localhost -p (Get-DbPort) -U $DbUser -d postgres -c "DROP DATABASE IF EXISTS `"$DbName`" WITH (FORCE)" | Out-Null
+    Invoke-PgSql $pgBin $DbUser 'postgres' "DROP DATABASE IF EXISTS `"$DbName`" WITH (FORCE);" | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'Could not drop the old database.' }
-    & $psql -h localhost -p (Get-DbPort) -U $DbUser -d postgres -c "CREATE DATABASE `"$DbName`" ENCODING 'UTF8' TEMPLATE template0" | Out-Null
+    Invoke-PgSql $pgBin $DbUser 'postgres' "CREATE DATABASE `"$DbName`" ENCODING 'UTF8' TEMPLATE template0;" | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'Could not create the database.' }
 
     Write-Step 'Restoring'

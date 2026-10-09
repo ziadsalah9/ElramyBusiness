@@ -65,7 +65,7 @@ if (-not (Test-Path $dbFile)) {
     }
     $dbExists = & $psql -h localhost -p (Get-DbPort) -U postgres -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = '$DbName'"
     if (-not ($dbExists -match '1')) {
-        & $psql -h localhost -p (Get-DbPort) -U postgres -d postgres -c "CREATE DATABASE `"$DbName`" OWNER $DbUser ENCODING 'UTF8' TEMPLATE template0" | Out-Null
+        Invoke-PgSql $pgBin 'postgres' 'postgres' "CREATE DATABASE `"$DbName`" OWNER $DbUser ENCODING 'UTF8' TEMPLATE template0;" | Out-Null
     }
     if ($LASTEXITCODE -ne 0) { throw 'Creating the store database failed.' }
     Remove-Item Env:\PGPASSWORD

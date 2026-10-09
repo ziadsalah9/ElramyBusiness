@@ -47,6 +47,19 @@ function Find-PgBin {
     return $null
 }
 
+function Invoke-PgSql([string]$PgBin, [string]$User, [string]$Database, [string]$Sql) {
+    # The SQL goes through a file, not -c: Windows PowerShell 5.1 drops double quotes
+    # inside arguments to programs, so CREATE DATABASE "ElramyGroup" would reach psql
+    # as CREATE DATABASE ElramyGroup and create "elramygroup" instead.
+    $file = Join-Path $env:TEMP ('elramy-' + [guid]::NewGuid().ToString() + '.sql')
+    Set-Content -Path $file -Value $Sql -Encoding ASCII
+    try {
+        & (Join-Path $PgBin 'psql.exe') -X -q -v ON_ERROR_STOP=1 -h localhost -p (Get-DbPort) -U $User -d $Database -f $file
+    } finally {
+        Remove-Item $file -Force -ErrorAction SilentlyContinue
+    }
+}
+
 function Read-Secret([string]$name) {
     $file = Join-Path $SecretsDir $name
     if (-not (Test-Path $file)) { throw "Missing secret file $file - run install.bat first." }
