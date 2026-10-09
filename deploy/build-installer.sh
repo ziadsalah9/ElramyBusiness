@@ -14,7 +14,7 @@ JRE_ZIP="$CACHE/OpenJDK21U-jre_x64_windows_hotspot_21.0.12.1_1.zip"
 PG_ZIP="$CACHE/postgresql-16.15-1-windows-x64-binaries.zip"
 VC_REDIST="$CACHE/vc_redist.x64.exe"   # Microsoft Visual C++ 2015-2022 x64 (aka.ms/vs/17/release/vc_redist.x64.exe)
 WORK="$SHOP/.local-dev/installer-build"
-VERSION="1.0.$(date +%y%m).$(date +%d%H)"
+VERSION="1.$(date +%y%m).$((10#$(date +%d%H))).$((10#$(date +%M%S)))"   # unique per build: 1.yymm.ddHH.MMSS
 
 for z in "$JRE_ZIP" "$PG_ZIP" "$VC_REDIST"; do
   [ -f "$z" ] || { echo "Missing $z" >&2; exit 1; }
