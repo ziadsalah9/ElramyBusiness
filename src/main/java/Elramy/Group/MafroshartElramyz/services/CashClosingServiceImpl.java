@@ -7,6 +7,7 @@ import Elramy.Group.MafroshartElramyz.activity.Changes;
 import Elramy.Group.MafroshartElramyz.enums.cashClosing.CashClosingRequest;
 import Elramy.Group.MafroshartElramyz.enums.cashClosing.CashClosingResponse;
 import Elramy.Group.MafroshartElramyz.enums.cashClosing.CashClosingSummary;
+import Elramy.Group.MafroshartElramyz.enums.PaymentMethod;
 import Elramy.Group.MafroshartElramyz.enums.Role;
 import Elramy.Group.MafroshartElramyz.exception.ConflictException;
 import Elramy.Group.MafroshartElramyz.exception.ResourceNotFoundException;
@@ -24,7 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -35,6 +35,8 @@ public class CashClosingServiceImpl implements CashClosingService {
     private final CashClosingRepository cashClosingRepository;
     private final BranchRepository branchRepository;
     private final SalesInvoiceRepository salesInvoiceRepository;
+    private final Elramy.Group.MafroshartElramyz.customeraccount.CustomerPaymentRepository paymentRepository;
+    private final Elramy.Group.MafroshartElramyz.salesreturn.SalesReturnRepository returnRepository;
     private final CashClosingMapper cashClosingMapper;
     private final UserService userService;
     private final ActivityLogService activityLog;
@@ -174,13 +176,17 @@ public class CashClosingServiceImpl implements CashClosingService {
         return cashClosingRepository.findAll().stream().map(cashClosingMapper::toResponse).toList();
     }
 
+    /**
+     * Cash that should be in the drawer for the day: cash taken at sales
+     * (the cash part of MIXED included), plus cash customer payments, minus
+     * cash handed back for returns.
+     */
     private BigDecimal calculateCashSalesTotal(Long branchId, LocalDate date) {
-        LocalDateTime start = date.atStartOfDay();
-        LocalDateTime end = date.atTime(LocalTime.MAX);
-        return salesInvoiceRepository.findByBranchIdAndCreatedAtBetween(branchId, start, end).stream()
-                .filter(inv -> "CASH".equals(String.valueOf(inv.getPaymentMethod())))
-                .map(inv -> inv.getPaid() == null ? inv.getTotal() : inv.getPaid()) // prefer paid if set
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        LocalDateTime from = date.atStartOfDay();
+        LocalDateTime to = date.plusDays(1).atStartOfDay();
+        return salesInvoiceRepository.sumCashByBranchBetween(branchId, from, to)
+                .add(paymentRepository.sumByBranchAndMethodBetween(branchId, PaymentMethod.CASH, from, to))
+                .subtract(returnRepository.sumCashRefundByBranchBetween(branchId, from, to));
     }
 
     private long n(Integer v) {

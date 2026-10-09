@@ -35,7 +35,11 @@ public record SalesInvoiceRequest(
         BigDecimal paid,
 
         @jakarta.validation.constraints.Size(max = 500)
-        String notes
+        String notes,
+
+        /** Cash part of {@code paid}; required for MIXED, ignored otherwise. */
+        @DecimalMin(value = "0.0", message = "المبلغ النقدي لا يمكن أن يكون سالباً")
+        BigDecimal cashAmount
 
 ) {
 }

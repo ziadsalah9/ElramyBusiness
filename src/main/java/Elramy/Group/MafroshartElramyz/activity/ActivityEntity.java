@@ -9,5 +9,8 @@ public enum ActivityEntity {
     BRANCH,
     CASH_CLOSING,
     PRODUCT_DRAFT,
-    STOCKTAKE
+    STOCKTAKE,
+    SALES_RETURN,
+    CUSTOMER_PAYMENT,
+    SETTINGS
 }

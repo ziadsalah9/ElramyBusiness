@@ -38,11 +38,15 @@ class CashClosingServiceImplTest {
         BranchRepository branches = mock(BranchRepository.class);
         SalesInvoiceRepository sales = mock(SalesInvoiceRepository.class);
         users = mock(UserService.class);
-        service = new CashClosingServiceImpl(closings, branches, sales, mock(CashClosingMapper.class), users, mock(ActivityLogService.class));
+        Elramy.Group.MafroshartElramyz.customeraccount.CustomerPaymentRepository payments = mock(Elramy.Group.MafroshartElramyz.customeraccount.CustomerPaymentRepository.class);
+        Elramy.Group.MafroshartElramyz.salesreturn.SalesReturnRepository returns = mock(Elramy.Group.MafroshartElramyz.salesreturn.SalesReturnRepository.class);
+        when(sales.sumCashByBranchBetween(anyLong(), any(), any())).thenReturn(BigDecimal.ZERO);
+        when(payments.sumByBranchAndMethodBetween(anyLong(), any(), any(), any())).thenReturn(BigDecimal.ZERO);
+        when(returns.sumCashRefundByBranchBetween(anyLong(), any(), any())).thenReturn(BigDecimal.ZERO);
+        service = new CashClosingServiceImpl(closings, branches, sales, payments, returns, mock(CashClosingMapper.class), users, mock(ActivityLogService.class));
 
         Branch branch = Branch.builder().id(1L).name("فرع كوم حماة").build();
         when(branches.findById(1L)).thenReturn(Optional.of(branch));
-        when(sales.findByBranchIdAndCreatedAtBetween(anyLong(), any(), any())).thenReturn(List.of());
         when(closings.findByBranchIdAndClosingDate(anyLong(), any())).thenReturn(Optional.empty());
         when(closings.save(any())).thenAnswer(inv -> inv.getArgument(0));
     }

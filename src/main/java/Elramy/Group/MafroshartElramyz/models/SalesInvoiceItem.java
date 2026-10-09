@@ -34,6 +34,11 @@ public class SalesInvoiceItem extends BaseEntity {
     @Column(nullable = false)
     private Integer quantity;
 
+    /** Pieces of this line already returned (V16). */
+    @Builder.Default
+    @Column(nullable = false)
+    private Integer returnedQuantity = 0;
+
     @Column(nullable = false)
     private BigDecimal unitPrice;
 

@@ -6,6 +6,7 @@ import Elramy.Group.MafroshartElramyz.activity.ActivityEntity;
 import Elramy.Group.MafroshartElramyz.activity.ActivityLogService;
 import Elramy.Group.MafroshartElramyz.activity.Changes;
 import Elramy.Group.MafroshartElramyz.enums.Role;
+import Elramy.Group.MafroshartElramyz.enums.PaymentMethod;
 import Elramy.Group.MafroshartElramyz.enums.TransactionType;
 import Elramy.Group.MafroshartElramyz.enums.salesInvoice.SalesInvoiceItemRequest;
 import Elramy.Group.MafroshartElramyz.enums.salesInvoice.SalesInvoiceRequest;
@@ -45,6 +46,7 @@ public class SalesInvoiceServiceImpl
     private final CustomerRepository customerRepository;
     private final UserService userService;
     private final ActivityLogService activityLog;
+    private final Elramy.Group.MafroshartElramyz.settings.StoreSettingsService storeSettings;
 
 
     // =========================================================
@@ -293,6 +295,48 @@ public class SalesInvoiceServiceImpl
                     "Paid amount cannot be greater than invoice total"
             );
         }
+
+
+        // =========================================================
+        // EMPLOYEE DISCOUNT LIMIT
+        // =========================================================
+
+        // Line and invoice discounts together, as a share of the invoice
+        // before any discount. Admins have no limit.
+        if (currentUser.getRole() != Role.ADMIN) {
+            BigDecimal gross = items.stream()
+                    .map(i -> i.getUnitPrice().multiply(BigDecimal.valueOf(i.getQuantity())))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal discounts = gross.subtract(total);
+            BigDecimal maxPercent = storeSettings.employeeMaxDiscountPercent();
+            BigDecimal allowed = gross.multiply(maxPercent).divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+            if (discounts.compareTo(allowed) > 0) {
+                throw new IllegalArgumentException("الخصم (" + discounts.stripTrailingZeros().toPlainString()
+                        + " ج.م) أكبر من المسموح للموظف (" + maxPercent.stripTrailingZeros().toPlainString()
+                        + "% = " + allowed.stripTrailingZeros().toPlainString() + " ج.م). اطلب من المدير.");
+            }
+        }
+
+
+        // =========================================================
+        // CASH PART (for the cash closing)
+        // =========================================================
+
+        BigDecimal cashAmount;
+        if (request.paymentMethod() == PaymentMethod.CASH) {
+            cashAmount = paid;
+        } else if (request.paymentMethod() == PaymentMethod.MIXED) {
+            if (request.cashAmount() == null) {
+                throw new IllegalArgumentException("اكتب الجزء المدفوع نقداً من الدفع المختلط.");
+            }
+            cashAmount = request.cashAmount().setScale(2, java.math.RoundingMode.HALF_UP);
+            if (cashAmount.compareTo(paid) > 0) {
+                throw new IllegalArgumentException("الجزء النقدي لا يمكن أن يزيد عن المبلغ المدفوع.");
+            }
+        } else {
+            cashAmount = BigDecimal.ZERO;
+        }
+        invoice.setCashAmount(cashAmount);
 
 
         // =========================================================

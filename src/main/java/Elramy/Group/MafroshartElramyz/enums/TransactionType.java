@@ -9,5 +9,7 @@ public enum TransactionType {
     TRANSFER_OUT,
 
     ADJUSTMENT_IN,
-    ADJUSTMENT_OUT
+    ADJUSTMENT_OUT,
+    // Sales return: pieces back on the shelf (V16; allowed by the DB check since V1).
+    RETURN
 }

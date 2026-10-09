@@ -28,9 +28,10 @@ public record SalesInvoiceItemResponse(
         Long variantId,
         String variantCode,
         String color,
-        String size
+        String size,
 
-
+        /** Pieces already returned (V16). */
+        Integer returnedQuantity
 
         ) {
 }

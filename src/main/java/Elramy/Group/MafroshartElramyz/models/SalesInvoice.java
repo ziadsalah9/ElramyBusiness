@@ -38,6 +38,14 @@ public class SalesInvoice extends BaseEntity {
     @Column(nullable = false)
     private BigDecimal total;
 
+    /** Cash part of {@code paid} (V16): CASH = paid, MIXED = typed, others = 0; null = unknown (old MIXED). */
+    private BigDecimal cashAmount;
+
+    /** Value already returned (V16); never more than {@code total}. */
+    @Builder.Default
+    @Column(nullable = false)
+    private BigDecimal returnedTotal = BigDecimal.ZERO;
+
     @Builder.Default
     private BigDecimal paid = BigDecimal.ZERO;
 

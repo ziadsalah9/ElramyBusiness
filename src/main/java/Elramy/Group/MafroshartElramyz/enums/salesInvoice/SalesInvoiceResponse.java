@@ -37,7 +37,13 @@ public record SalesInvoiceResponse(
 
         String notes,
 
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+
+        /** Cash part of {@code paid}; null when unknown (old MIXED invoices). */
+        BigDecimal cashAmount,
+
+        /** Value already returned. */
+        BigDecimal returnedTotal
 
 ) {
 }
