@@ -23,7 +23,6 @@ public interface SalesReturnRepository extends JpaRepository<SalesReturn, Long> 
 
     List<SalesReturn> findByCustomerIdOrderByCreatedAtAsc(Long customerId);
 
-    List<SalesReturn> findAllByOrderByCreatedAtDesc();
 
     long countByReturnNumberStartingWith(String prefix);
 
@@ -31,4 +30,6 @@ public interface SalesReturnRepository extends JpaRepository<SalesReturn, Long> 
 
     @Query("SELECT COALESCE(SUM(r.creditAmount), 0) FROM SalesReturn r")
     BigDecimal sumAllCredits();
+
+    List<SalesReturn> findByCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtDesc(LocalDateTime from, LocalDateTime to);
 }

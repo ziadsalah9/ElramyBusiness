@@ -1,8 +1,8 @@
 package Elramy.Group.MafroshartElramyz.mapping;
 
 
-import Elramy.Group.MafroshartElramyz.enums.purchaseInvoice.PurchaseInvoiceItemResponse;
-import Elramy.Group.MafroshartElramyz.enums.purchaseInvoice.PurchaseInvoiceResponse;
+import Elramy.Group.MafroshartElramyz.dto.purchaseInvoice.PurchaseInvoiceItemResponse;
+import Elramy.Group.MafroshartElramyz.dto.purchaseInvoice.PurchaseInvoiceResponse;
 import Elramy.Group.MafroshartElramyz.models.PurchaseInvoice;
 import Elramy.Group.MafroshartElramyz.models.PurchaseInvoiceItem;
 import org.springframework.stereotype.Component;

@@ -1,8 +1,8 @@
 package Elramy.Group.MafroshartElramyz.services;
 
-import Elramy.Group.MafroshartElramyz.enums.user.CreateUserRequest;
-import Elramy.Group.MafroshartElramyz.enums.user.UpdateUserRequest;
-import Elramy.Group.MafroshartElramyz.enums.user.UserResponse;
+import Elramy.Group.MafroshartElramyz.dto.user.CreateUserRequest;
+import Elramy.Group.MafroshartElramyz.dto.user.UpdateUserRequest;
+import Elramy.Group.MafroshartElramyz.dto.user.UserResponse;
 import Elramy.Group.MafroshartElramyz.models.User;
 
 import java.util.List;

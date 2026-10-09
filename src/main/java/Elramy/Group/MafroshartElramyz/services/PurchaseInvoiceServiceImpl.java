@@ -6,10 +6,10 @@ import Elramy.Group.MafroshartElramyz.activity.ActivityLogService;
 import Elramy.Group.MafroshartElramyz.activity.Changes;
 import Elramy.Group.MafroshartElramyz.enums.TransactionType;
 
-import Elramy.Group.MafroshartElramyz.enums.purchaseInvoice.CreatePurchaseInvoiceRequest;
-import Elramy.Group.MafroshartElramyz.enums.purchaseInvoice.PurchaseInvoiceImportRow;
-import Elramy.Group.MafroshartElramyz.enums.purchaseInvoice.PurchaseInvoiceItemRequest;
-import Elramy.Group.MafroshartElramyz.enums.purchaseInvoice.PurchaseInvoiceResponse;
+import Elramy.Group.MafroshartElramyz.dto.purchaseInvoice.CreatePurchaseInvoiceRequest;
+import Elramy.Group.MafroshartElramyz.dto.purchaseInvoice.PurchaseInvoiceImportRow;
+import Elramy.Group.MafroshartElramyz.dto.purchaseInvoice.PurchaseInvoiceItemRequest;
+import Elramy.Group.MafroshartElramyz.dto.purchaseInvoice.PurchaseInvoiceResponse;
 import Elramy.Group.MafroshartElramyz.exception.BranchNotFoundException;
 import Elramy.Group.MafroshartElramyz.exception.DuplicatePurchaseInvoiceException;
 import Elramy.Group.MafroshartElramyz.exception.ProductNotFoundException;
@@ -140,7 +140,9 @@ public class PurchaseInvoiceServiceImpl
                                             itemRequest.quantity()
                                     )
                             )
-                            .subtract(discount);
+                            .subtract(discount)
+                            // Money is stored to 2 decimals, like sales.
+                            .setScale(2, java.math.RoundingMode.HALF_UP);
 
 
             if (itemTotal.compareTo(BigDecimal.ZERO) < 0) {
@@ -180,7 +182,7 @@ public class PurchaseInvoiceServiceImpl
 
 
         BigDecimal total =
-                itemsTotal.subtract(invoiceDiscount);
+                itemsTotal.subtract(invoiceDiscount).setScale(2, java.math.RoundingMode.HALF_UP);
 
 
         if (total.compareTo(BigDecimal.ZERO) < 0) {
@@ -284,9 +286,15 @@ public class PurchaseInvoiceServiceImpl
     @Override
     @Transactional(readOnly = true)
     public List<PurchaseInvoiceResponse> getAll() {
+        return getAll(null, null);
+    }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<PurchaseInvoiceResponse> getAll(java.time.LocalDate from, java.time.LocalDate to) {
+        Elramy.Group.MafroshartElramyz.util.DateRange range = Elramy.Group.MafroshartElramyz.util.DateRange.of(from, to);
         return purchaseInvoiceRepository
-                .findAll()
+                .findByCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtDesc(range.from(), range.to())
                 .stream()
                 .map(purchaseInvoiceMapper::toResponse)
                 .toList();

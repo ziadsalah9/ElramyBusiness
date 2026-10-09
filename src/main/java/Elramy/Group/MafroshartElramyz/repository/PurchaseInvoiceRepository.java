@@ -13,4 +13,6 @@ public interface PurchaseInvoiceRepository
     Optional<PurchaseInvoice> findByInvoiceNumber(String invoiceNumber);
 
     java.util.List<PurchaseInvoice> findByCreatedAtGreaterThanEqualAndCreatedAtLessThan(java.time.LocalDateTime from, java.time.LocalDateTime to);
+
+    java.util.List<PurchaseInvoice> findByCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtDesc(java.time.LocalDateTime from, java.time.LocalDateTime to);
 }

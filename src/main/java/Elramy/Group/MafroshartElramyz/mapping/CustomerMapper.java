@@ -1,6 +1,6 @@
 package Elramy.Group.MafroshartElramyz.mapping;
 
-import Elramy.Group.MafroshartElramyz.enums.customer.CustomerResponse;
+import Elramy.Group.MafroshartElramyz.dto.customer.CustomerResponse;
 import Elramy.Group.MafroshartElramyz.models.Customer;
 import org.springframework.stereotype.Component;
 

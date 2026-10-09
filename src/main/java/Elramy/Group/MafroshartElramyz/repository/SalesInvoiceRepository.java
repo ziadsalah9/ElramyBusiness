@@ -47,4 +47,16 @@ public interface SalesInvoiceRepository
     /** All customers together: unpaid on invoices (before payments and return credits). */
     @org.springframework.data.jpa.repository.Query("SELECT COALESCE(SUM(i.total - i.paid), 0) FROM SalesInvoice i")
     java.math.BigDecimal sumUnpaid();
+    /** Newest first in [from, to); a null branch means every branch. */
+    @org.springframework.data.jpa.repository.Query("SELECT i FROM SalesInvoice i WHERE (:branchId IS NULL OR i.branch.id = :branchId)"
+            + " AND i.createdAt >= :from AND i.createdAt < :to ORDER BY i.createdAt DESC")
+    List<SalesInvoice> findInRange(@org.springframework.data.repository.query.Param("branchId") Long branchId,
+                                   @org.springframework.data.repository.query.Param("from") java.time.LocalDateTime from,
+                                   @org.springframework.data.repository.query.Param("to") java.time.LocalDateTime to);
+
+    long countByBranchId(Long branchId);
+
+    List<SalesInvoice> findTop5ByOrderByCreatedAtDesc();
+
+    List<SalesInvoice> findTop5ByBranchIdOrderByCreatedAtDesc(Long branchId);
 }

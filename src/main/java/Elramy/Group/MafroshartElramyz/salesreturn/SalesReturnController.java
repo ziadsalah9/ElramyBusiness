@@ -32,7 +32,9 @@ public class SalesReturnController {
     /** All returns, for the receipts screen. */
     @GetMapping("/api/sales-returns")
     @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
-    public List<ReturnResponse> all() {
-        return service.all();
+    public List<ReturnResponse> all(
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate from,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate to) {
+        return service.all(from, to);
     }
 }

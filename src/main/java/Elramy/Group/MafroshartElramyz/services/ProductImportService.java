@@ -1,6 +1,6 @@
 package Elramy.Group.MafroshartElramyz.services;
 
-import Elramy.Group.MafroshartElramyz.enums.product.ProductImportResult;
+import Elramy.Group.MafroshartElramyz.dto.product.ProductImportResult;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface ProductImportService {

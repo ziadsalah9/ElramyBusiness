@@ -1,6 +1,6 @@
 package Elramy.Group.MafroshartElramyz.controller;
 
-import Elramy.Group.MafroshartElramyz.enums.purchaseInvoice.PurchaseInvoiceResponse;
+import Elramy.Group.MafroshartElramyz.dto.purchaseInvoice.PurchaseInvoiceResponse;
 import Elramy.Group.MafroshartElramyz.services.PurchaseInvoiceImportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

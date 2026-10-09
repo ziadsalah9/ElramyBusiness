@@ -1,23 +1,16 @@
 package Elramy.Group.MafroshartElramyz.services;
 
-
-
-import Elramy.Group.MafroshartElramyz.enums.branch.BranchResponse;
-import Elramy.Group.MafroshartElramyz.enums.branch.CreateBranchRequest;
-import Elramy.Group.MafroshartElramyz.enums.branch.UpdateBranchRequest;
+import Elramy.Group.MafroshartElramyz.dto.branch.BranchResponse;
 
 import java.util.List;
 
+/**
+ * Branches are read-only: the shop runs in single-branch mode (V7), so the
+ * branch is used to scope invoices and closings, not managed in the app.
+ */
 public interface BranchService {
-
-    BranchResponse create(CreateBranchRequest request);
-
-    BranchResponse update(Long id, UpdateBranchRequest request);
 
     BranchResponse getById(Long id);
 
     List<BranchResponse> getAll();
-
-    void toggleStatus(Long id);
-
 }

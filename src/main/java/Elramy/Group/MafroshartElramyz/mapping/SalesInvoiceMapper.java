@@ -1,8 +1,8 @@
 package Elramy.Group.MafroshartElramyz.mapping;
 
-import Elramy.Group.MafroshartElramyz.enums.customer.CustomerResponse;
-import Elramy.Group.MafroshartElramyz.enums.salesInvoice.SalesInvoiceItemResponse;
-import Elramy.Group.MafroshartElramyz.enums.salesInvoice.SalesInvoiceResponse;
+import Elramy.Group.MafroshartElramyz.dto.customer.CustomerResponse;
+import Elramy.Group.MafroshartElramyz.dto.salesInvoice.SalesInvoiceItemResponse;
+import Elramy.Group.MafroshartElramyz.dto.salesInvoice.SalesInvoiceResponse;
 import Elramy.Group.MafroshartElramyz.models.SalesInvoice;
 import Elramy.Group.MafroshartElramyz.models.SalesInvoiceItem;
 import lombok.RequiredArgsConstructor;

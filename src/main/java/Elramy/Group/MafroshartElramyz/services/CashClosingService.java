@@ -1,8 +1,8 @@
 package Elramy.Group.MafroshartElramyz.services;
 
-import Elramy.Group.MafroshartElramyz.enums.cashClosing.CashClosingRequest;
-import Elramy.Group.MafroshartElramyz.enums.cashClosing.CashClosingResponse;
-import Elramy.Group.MafroshartElramyz.enums.cashClosing.CashClosingSummary;
+import Elramy.Group.MafroshartElramyz.dto.cashClosing.CashClosingRequest;
+import Elramy.Group.MafroshartElramyz.dto.cashClosing.CashClosingResponse;
+import Elramy.Group.MafroshartElramyz.dto.cashClosing.CashClosingSummary;
 
 import java.time.LocalDate;
 import java.util.List;

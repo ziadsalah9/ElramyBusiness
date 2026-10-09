@@ -1,7 +1,7 @@
 package Elramy.Group.MafroshartElramyz.mapping;
 
 import Elramy.Group.MafroshartElramyz.enums.ProductType;
-import Elramy.Group.MafroshartElramyz.enums.product.ProductPriceResponse;
+import Elramy.Group.MafroshartElramyz.dto.product.ProductPriceResponse;
 import Elramy.Group.MafroshartElramyz.models.Product;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

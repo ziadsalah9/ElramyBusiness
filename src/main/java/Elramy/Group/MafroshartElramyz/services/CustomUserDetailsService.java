@@ -29,12 +29,11 @@ public class CustomUserDetailsService
                         )
                 );
 
-        return org.springframework.security.core.userdetails.User
-                .builder()
-                .username(user.getUsername())
-                .password(user.getPassword())
-                .roles(user.getRole().name())
-                .disabled(!Boolean.TRUE.equals(user.getActive()))
-                .build();
+        return new Elramy.Group.MafroshartElramyz.config.AppUserDetails(
+                user.getUsername(),
+                user.getPassword(),
+                Boolean.TRUE.equals(user.getActive()),
+                java.util.List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_" + user.getRole().name())),
+                user.getCredentialsChangedAt());
     }
 }

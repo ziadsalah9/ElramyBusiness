@@ -1,8 +1,8 @@
 package Elramy.Group.MafroshartElramyz.services;
 
 import Elramy.Group.MafroshartElramyz.enums.ProductType;
-import Elramy.Group.MafroshartElramyz.enums.product.CreateProductPriceRequest;
-import Elramy.Group.MafroshartElramyz.enums.product.ProductResponse;
+import Elramy.Group.MafroshartElramyz.dto.product.CreateProductPriceRequest;
+import Elramy.Group.MafroshartElramyz.dto.product.ProductResponse;
 import Elramy.Group.MafroshartElramyz.exception.PriceNotFoundException;
 import Elramy.Group.MafroshartElramyz.exception.ProductNotFoundException;
 import Elramy.Group.MafroshartElramyz.mapping.ProductMapper;

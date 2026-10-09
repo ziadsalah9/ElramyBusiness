@@ -5,7 +5,7 @@ import Elramy.Group.MafroshartElramyz.activity.ActivityEntity;
 import Elramy.Group.MafroshartElramyz.activity.ActivityLogService;
 import Elramy.Group.MafroshartElramyz.activity.Changes;
 import Elramy.Group.MafroshartElramyz.enums.TransactionType;
-import Elramy.Group.MafroshartElramyz.enums.product.*;
+import Elramy.Group.MafroshartElramyz.dto.product.*;
 import Elramy.Group.MafroshartElramyz.exception.ConflictException;
 import Elramy.Group.MafroshartElramyz.exception.PriceNotFoundException;
 import Elramy.Group.MafroshartElramyz.exception.ProductNotFoundException;

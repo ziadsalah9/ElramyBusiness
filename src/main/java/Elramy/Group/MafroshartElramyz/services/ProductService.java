@@ -1,6 +1,6 @@
 package Elramy.Group.MafroshartElramyz.services;
 
-import Elramy.Group.MafroshartElramyz.enums.product.*;
+import Elramy.Group.MafroshartElramyz.dto.product.*;
 
 import java.util.List;
 

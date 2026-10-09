@@ -45,4 +45,6 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
         ORDER BY p.name
         """)
     List<Product> findLowStock();
+
+    long countByActiveTrue();
 }

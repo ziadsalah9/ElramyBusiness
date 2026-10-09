@@ -126,8 +126,10 @@ public class SalesReturnService {
     }
 
     @Transactional(readOnly = true)
-    public List<ReturnResponse> all() {
-        return returns.findAllByOrderByCreatedAtDesc().stream().map(SalesReturnService::toResponse).toList();
+    public List<ReturnResponse> all(java.time.LocalDate from, java.time.LocalDate to) {
+        Elramy.Group.MafroshartElramyz.util.DateRange range = Elramy.Group.MafroshartElramyz.util.DateRange.of(from, to);
+        return returns.findByCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtDesc(range.from(), range.to())
+                .stream().map(SalesReturnService::toResponse).toList();
     }
 
     static ReturnResponse toResponse(SalesReturn r) {

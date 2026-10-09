@@ -29,7 +29,9 @@ public class CustomerAccountController {
     }
 
     @GetMapping("/api/customer-payments")
-    public List<PaymentResponse> payments() {
-        return service.listPayments();
+    public List<PaymentResponse> payments(
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate from,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate to) {
+        return service.listPayments(from, to);
     }
 }

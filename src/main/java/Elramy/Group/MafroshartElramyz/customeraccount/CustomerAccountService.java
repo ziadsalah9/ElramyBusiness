@@ -130,8 +130,10 @@ public class CustomerAccountService {
     }
 
     @Transactional(readOnly = true)
-    public List<PaymentResponse> listPayments() {
-        return payments.findAllByOrderByCreatedAtDesc().stream().map(p -> toResponse(p, null)).toList();
+    public List<PaymentResponse> listPayments(java.time.LocalDate from, java.time.LocalDate to) {
+        Elramy.Group.MafroshartElramyz.util.DateRange range = Elramy.Group.MafroshartElramyz.util.DateRange.of(from, to);
+        return payments.findByCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtDesc(range.from(), range.to())
+                .stream().map(p -> toResponse(p, null)).toList();
     }
 
     private static PaymentResponse toResponse(CustomerPayment p, BigDecimal balanceAfter) {

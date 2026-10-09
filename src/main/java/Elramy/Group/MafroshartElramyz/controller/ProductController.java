@@ -1,6 +1,6 @@
 package Elramy.Group.MafroshartElramyz.controller;
 
-import Elramy.Group.MafroshartElramyz.enums.product.*;
+import Elramy.Group.MafroshartElramyz.dto.product.*;
 import Elramy.Group.MafroshartElramyz.services.ProductImportService;
 import Elramy.Group.MafroshartElramyz.services.ProductService;
 import jakarta.validation.Valid;

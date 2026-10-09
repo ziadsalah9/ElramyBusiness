@@ -132,7 +132,6 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler({
-            DuplicateBranchException.class,
             DuplicateCustomerException.class,
             DuplicatePurchaseInvoiceException.class
     })

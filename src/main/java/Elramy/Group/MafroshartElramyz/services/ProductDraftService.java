@@ -1,8 +1,8 @@
 package Elramy.Group.MafroshartElramyz.services;
 
-import Elramy.Group.MafroshartElramyz.enums.product.ProductDraftRequest;
-import Elramy.Group.MafroshartElramyz.enums.product.ProductDraftResponse;
-import Elramy.Group.MafroshartElramyz.enums.product.ProductResponse;
+import Elramy.Group.MafroshartElramyz.dto.product.ProductDraftRequest;
+import Elramy.Group.MafroshartElramyz.dto.product.ProductDraftResponse;
+import Elramy.Group.MafroshartElramyz.dto.product.ProductResponse;
 
 import java.util.List;
 

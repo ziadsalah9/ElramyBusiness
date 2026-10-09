@@ -1,8 +1,8 @@
 package Elramy.Group.MafroshartElramyz.controller;
 
-import Elramy.Group.MafroshartElramyz.enums.product.ProductDraftRequest;
-import Elramy.Group.MafroshartElramyz.enums.product.ProductDraftResponse;
-import Elramy.Group.MafroshartElramyz.enums.product.ProductResponse;
+import Elramy.Group.MafroshartElramyz.dto.product.ProductDraftRequest;
+import Elramy.Group.MafroshartElramyz.dto.product.ProductDraftResponse;
+import Elramy.Group.MafroshartElramyz.dto.product.ProductResponse;
 import Elramy.Group.MafroshartElramyz.services.ProductDraftService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

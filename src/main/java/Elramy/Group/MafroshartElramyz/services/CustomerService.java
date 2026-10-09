@@ -1,9 +1,9 @@
 package Elramy.Group.MafroshartElramyz.services;
 
-import Elramy.Group.MafroshartElramyz.enums.customer.CreateCustomerRequest;
-import Elramy.Group.MafroshartElramyz.enums.customer.CustomerDeleteResponse;
-import Elramy.Group.MafroshartElramyz.enums.customer.CustomerResponse;
-import Elramy.Group.MafroshartElramyz.enums.customer.UpdateCustomerRequest;
+import Elramy.Group.MafroshartElramyz.dto.customer.CreateCustomerRequest;
+import Elramy.Group.MafroshartElramyz.dto.customer.CustomerDeleteResponse;
+import Elramy.Group.MafroshartElramyz.dto.customer.CustomerResponse;
+import Elramy.Group.MafroshartElramyz.dto.customer.UpdateCustomerRequest;
 
 import java.util.List;
 

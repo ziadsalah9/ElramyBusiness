@@ -1,7 +1,7 @@
 package Elramy.Group.MafroshartElramyz.controller;
 
-import Elramy.Group.MafroshartElramyz.enums.purchaseInvoice.CreatePurchaseInvoiceRequest;
-import Elramy.Group.MafroshartElramyz.enums.purchaseInvoice.PurchaseInvoiceResponse;
+import Elramy.Group.MafroshartElramyz.dto.purchaseInvoice.CreatePurchaseInvoiceRequest;
+import Elramy.Group.MafroshartElramyz.dto.purchaseInvoice.PurchaseInvoiceResponse;
 import Elramy.Group.MafroshartElramyz.services.PurchaseInvoiceService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -54,10 +54,12 @@ public class PurchaseInvoiceController {
     // =========================================================
 
     @GetMapping
-    public ResponseEntity<List<PurchaseInvoiceResponse>> getAll() {
+    public ResponseEntity<List<PurchaseInvoiceResponse>> getAll(
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate from,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate to) {
 
         return ResponseEntity.ok(
-                purchaseInvoiceService.getAll()
+                purchaseInvoiceService.getAll(from, to)
         );
     }
 

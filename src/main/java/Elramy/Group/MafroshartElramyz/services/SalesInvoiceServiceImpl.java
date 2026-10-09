@@ -8,9 +8,9 @@ import Elramy.Group.MafroshartElramyz.activity.Changes;
 import Elramy.Group.MafroshartElramyz.enums.Role;
 import Elramy.Group.MafroshartElramyz.enums.PaymentMethod;
 import Elramy.Group.MafroshartElramyz.enums.TransactionType;
-import Elramy.Group.MafroshartElramyz.enums.salesInvoice.SalesInvoiceItemRequest;
-import Elramy.Group.MafroshartElramyz.enums.salesInvoice.SalesInvoiceRequest;
-import Elramy.Group.MafroshartElramyz.enums.salesInvoice.SalesInvoiceResponse;
+import Elramy.Group.MafroshartElramyz.dto.salesInvoice.SalesInvoiceItemRequest;
+import Elramy.Group.MafroshartElramyz.dto.salesInvoice.SalesInvoiceRequest;
+import Elramy.Group.MafroshartElramyz.dto.salesInvoice.SalesInvoiceResponse;
 import Elramy.Group.MafroshartElramyz.exception.BranchAccessDeniedException;
 import Elramy.Group.MafroshartElramyz.exception.BranchNotFoundException;
 import Elramy.Group.MafroshartElramyz.exception.CustomerPhoneNotFoundException;
@@ -488,17 +488,15 @@ public class SalesInvoiceServiceImpl
     @Override
     @Transactional(readOnly = true)
     public List<SalesInvoiceResponse> getAll() {
+        return getAll(null, null);
+    }
 
-        Long branchId =
-                userService.getEffectiveBranchId(null);
-
-        List<SalesInvoice> invoices =
-                branchId != null
-                        ? salesInvoiceRepository
-                        .findByBranchIdOrderByCreatedAtDesc(branchId)
-                        : salesInvoiceRepository.findAll();
-
-        return invoices
+    @Override
+    @Transactional(readOnly = true)
+    public List<SalesInvoiceResponse> getAll(java.time.LocalDate from, java.time.LocalDate to) {
+        Long branchId = userService.getEffectiveBranchId(null);
+        Elramy.Group.MafroshartElramyz.util.DateRange range = Elramy.Group.MafroshartElramyz.util.DateRange.of(from, to);
+        return salesInvoiceRepository.findInRange(branchId, range.from(), range.to())
                 .stream()
                 .map(salesInvoiceMapper::toResponse)
                 .toList();

@@ -2,7 +2,7 @@ package Elramy.Group.MafroshartElramyz.services;
 
 import Elramy.Group.MafroshartElramyz.activity.ActivityLogService;
 import Elramy.Group.MafroshartElramyz.enums.Role;
-import Elramy.Group.MafroshartElramyz.enums.cashClosing.CashClosingRequest;
+import Elramy.Group.MafroshartElramyz.dto.cashClosing.CashClosingRequest;
 import Elramy.Group.MafroshartElramyz.exception.ConflictException;
 import Elramy.Group.MafroshartElramyz.exception.UnauthorizedException;
 import Elramy.Group.MafroshartElramyz.mapping.CashClosingMapper;

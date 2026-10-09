@@ -1,8 +1,8 @@
 package Elramy.Group.MafroshartElramyz.mapping;
 
-import Elramy.Group.MafroshartElramyz.enums.product.ProductPriceResponse;
-import Elramy.Group.MafroshartElramyz.enums.product.ProductResponse;
-import Elramy.Group.MafroshartElramyz.enums.product.ProductVariantResponse;
+import Elramy.Group.MafroshartElramyz.dto.product.ProductPriceResponse;
+import Elramy.Group.MafroshartElramyz.dto.product.ProductResponse;
+import Elramy.Group.MafroshartElramyz.dto.product.ProductVariantResponse;
 import Elramy.Group.MafroshartElramyz.models.Product;
 import Elramy.Group.MafroshartElramyz.models.ProductVariant;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;

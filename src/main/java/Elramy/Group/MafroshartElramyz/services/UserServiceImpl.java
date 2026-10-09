@@ -5,9 +5,9 @@ import Elramy.Group.MafroshartElramyz.activity.ActivityEntity;
 import Elramy.Group.MafroshartElramyz.activity.ActivityLogService;
 import Elramy.Group.MafroshartElramyz.activity.Changes;
 import Elramy.Group.MafroshartElramyz.enums.Role;
-import Elramy.Group.MafroshartElramyz.enums.user.CreateUserRequest;
-import Elramy.Group.MafroshartElramyz.enums.user.UpdateUserRequest;
-import Elramy.Group.MafroshartElramyz.enums.user.UserResponse;
+import Elramy.Group.MafroshartElramyz.dto.user.CreateUserRequest;
+import Elramy.Group.MafroshartElramyz.dto.user.UpdateUserRequest;
+import Elramy.Group.MafroshartElramyz.dto.user.UserResponse;
 import Elramy.Group.MafroshartElramyz.exception.BranchAccessDeniedException;
 import Elramy.Group.MafroshartElramyz.exception.BranchNotFoundException;
 import Elramy.Group.MafroshartElramyz.exception.UnauthorizedException;
@@ -118,6 +118,7 @@ public class UserServiceImpl implements UserService {
                                 request.fullName().trim()
                         )
                         .role(request.role())
+                        .credentialsChangedAt(java.time.LocalDateTime.now())
                         .branch(branch)
                         .active(true)
                         .build();
@@ -254,6 +255,11 @@ public class UserServiceImpl implements UserService {
         if (request.active() != null) changes.add("نشط", user.getActive(), request.active());
         if (passwordChanged) changes.add("كلمة المرور", null, "تم تغييرها");
 
+        // Old logins must stop working after a password change, and a freed
+        // username must not let an old token act as its next owner.
+        if (passwordChanged || !username.equals(user.getUsername())) {
+            user.setCredentialsChangedAt(java.time.LocalDateTime.now());
+        }
         user.setUsername(username);
 
         user.setFullName(request.fullName().trim());

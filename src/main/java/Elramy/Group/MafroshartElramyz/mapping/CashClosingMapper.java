@@ -1,7 +1,7 @@
 package Elramy.Group.MafroshartElramyz.mapping;
 
-import Elramy.Group.MafroshartElramyz.enums.cashClosing.CashClosingResponse;
-import Elramy.Group.MafroshartElramyz.enums.cashClosing.CashClosingSummary;
+import Elramy.Group.MafroshartElramyz.dto.cashClosing.CashClosingResponse;
+import Elramy.Group.MafroshartElramyz.dto.cashClosing.CashClosingSummary;
 import Elramy.Group.MafroshartElramyz.models.CashClosing;
 import org.springframework.stereotype.Component;
 

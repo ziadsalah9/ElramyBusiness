@@ -2,10 +2,10 @@ package Elramy.Group.MafroshartElramyz.services;
 
 import Elramy.Group.MafroshartElramyz.enums.ProductType;
 import Elramy.Group.MafroshartElramyz.enums.TransactionType;
-import Elramy.Group.MafroshartElramyz.enums.product.CreateProductRequest;
-import Elramy.Group.MafroshartElramyz.enums.product.ProductResponse;
-import Elramy.Group.MafroshartElramyz.enums.product.ProductVariantRequest;
-import Elramy.Group.MafroshartElramyz.enums.product.UpdateProductRequest;
+import Elramy.Group.MafroshartElramyz.dto.product.CreateProductRequest;
+import Elramy.Group.MafroshartElramyz.dto.product.ProductResponse;
+import Elramy.Group.MafroshartElramyz.dto.product.ProductVariantRequest;
+import Elramy.Group.MafroshartElramyz.dto.product.UpdateProductRequest;
 import Elramy.Group.MafroshartElramyz.mapping.ProductMapper;
 import Elramy.Group.MafroshartElramyz.models.Product;
 import Elramy.Group.MafroshartElramyz.models.ProductVariant;

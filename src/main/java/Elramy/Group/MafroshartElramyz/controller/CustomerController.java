@@ -1,9 +1,9 @@
 package Elramy.Group.MafroshartElramyz.controller;
 
-import Elramy.Group.MafroshartElramyz.enums.customer.CreateCustomerRequest;
-import Elramy.Group.MafroshartElramyz.enums.customer.CustomerDeleteResponse;
-import Elramy.Group.MafroshartElramyz.enums.customer.CustomerResponse;
-import Elramy.Group.MafroshartElramyz.enums.customer.UpdateCustomerRequest;
+import Elramy.Group.MafroshartElramyz.dto.customer.CreateCustomerRequest;
+import Elramy.Group.MafroshartElramyz.dto.customer.CustomerDeleteResponse;
+import Elramy.Group.MafroshartElramyz.dto.customer.CustomerResponse;
+import Elramy.Group.MafroshartElramyz.dto.customer.UpdateCustomerRequest;
 import Elramy.Group.MafroshartElramyz.services.CustomerService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

@@ -1,8 +1,8 @@
 package Elramy.Group.MafroshartElramyz.controller;
 
-import Elramy.Group.MafroshartElramyz.enums.Security.LoginRequest;
-import Elramy.Group.MafroshartElramyz.enums.Security.LoginResponse;
-import Elramy.Group.MafroshartElramyz.enums.user.UserResponse;
+import Elramy.Group.MafroshartElramyz.dto.security.LoginRequest;
+import Elramy.Group.MafroshartElramyz.dto.security.LoginResponse;
+import Elramy.Group.MafroshartElramyz.dto.user.UserResponse;
 import Elramy.Group.MafroshartElramyz.models.User;
 import Elramy.Group.MafroshartElramyz.repository.UserRepository;
 import Elramy.Group.MafroshartElramyz.services.JwtService;

@@ -1,8 +1,8 @@
 package Elramy.Group.MafroshartElramyz.controller;
 
-import Elramy.Group.MafroshartElramyz.enums.cashClosing.CashClosingRequest;
-import Elramy.Group.MafroshartElramyz.enums.cashClosing.CashClosingResponse;
-import Elramy.Group.MafroshartElramyz.enums.cashClosing.CashClosingSummary;
+import Elramy.Group.MafroshartElramyz.dto.cashClosing.CashClosingRequest;
+import Elramy.Group.MafroshartElramyz.dto.cashClosing.CashClosingResponse;
+import Elramy.Group.MafroshartElramyz.dto.cashClosing.CashClosingSummary;
 import Elramy.Group.MafroshartElramyz.services.CashClosingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

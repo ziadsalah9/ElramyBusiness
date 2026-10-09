@@ -1,7 +1,7 @@
 package Elramy.Group.MafroshartElramyz.controller;
 
-import Elramy.Group.MafroshartElramyz.enums.salesInvoice.SalesInvoiceRequest;
-import Elramy.Group.MafroshartElramyz.enums.salesInvoice.SalesInvoiceResponse;
+import Elramy.Group.MafroshartElramyz.dto.salesInvoice.SalesInvoiceRequest;
+import Elramy.Group.MafroshartElramyz.dto.salesInvoice.SalesInvoiceResponse;
 import Elramy.Group.MafroshartElramyz.services.SalesInvoiceService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -72,10 +72,12 @@ public class SalesInvoiceController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
-    public ResponseEntity<List<SalesInvoiceResponse>> getAll() {
+    public ResponseEntity<List<SalesInvoiceResponse>> getAll(
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate from,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate to) {
 
         return ResponseEntity.ok(
-                salesInvoiceService.getAll()
+                salesInvoiceService.getAll(from, to)
         );
     }
 
