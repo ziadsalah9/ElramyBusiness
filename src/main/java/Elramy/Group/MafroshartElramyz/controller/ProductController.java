@@ -1,13 +1,17 @@
 package Elramy.Group.MafroshartElramyz.controller;
 
 import Elramy.Group.MafroshartElramyz.enums.product.*;
+import Elramy.Group.MafroshartElramyz.services.ProductImportService;
 import Elramy.Group.MafroshartElramyz.services.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -17,6 +21,62 @@ import java.util.List;
 public class ProductController {
 
     private final ProductService productService;
+    private final ProductImportService productImportService;
+
+
+    // =========================================================
+    // VARIANT LOOKUP (code / barcode scan)
+    // =========================================================
+
+    @GetMapping("/variants/lookup")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    public VariantLookupResponse lookupVariant(@RequestParam("code") String code) {
+
+        return productService.lookupVariant(code);
+    }
+
+
+    // =========================================================
+    // LOW STOCK
+    // =========================================================
+
+    /** Active products at or below their minimum quantity (header alert). */
+    @GetMapping("/low-stock")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    public List<ProductResponse> getLowStock() {
+
+        return productService.getLowStock();
+    }
+
+
+    // =========================================================
+    // BULK IMPORT (EXCEL)
+    // =========================================================
+
+    /** Blank template with dropdowns and an instructions sheet. */
+    @GetMapping("/import/template")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<byte[]> downloadImportTemplate() {
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"products-template.xlsx\"")
+                .contentType(MediaType.parseMediaType(
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(productImportService.buildTemplate());
+    }
+
+    /**
+     * All-or-nothing: 201 with the created products, or 400 with every
+     * row error and nothing saved.
+     */
+    @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasRole('ADMIN')")
+    public ProductImportResult importProducts(
+            @RequestParam("file") MultipartFile file) {
+
+        return productImportService.importFile(file);
+    }
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -36,21 +96,15 @@ public class ProductController {
         return productService.update(id, request);
     }
 
+    // POST and PATCH both set the current price (first price or change).
+    // They are kept as two verbs only for compatibility with older clients.
     @PostMapping("/{id}/price")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ProductResponse> createPrice(
+    public ProductResponse setPrice(
             @PathVariable Long id,
-            @RequestBody CreateProductPriceRequest request
-    ) {
+            @Valid @RequestBody CreateProductPriceRequest request) {
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(
-                        productService.createPrice(
-                                id,
-                                request
-                        )
-                );
+        return productService.setPrice(id, request);
     }
 
     @PatchMapping("/{id}/price")
@@ -59,7 +113,11 @@ public class ProductController {
             @PathVariable Long id,
             @Valid @RequestBody UpdatePriceRequest request) {
 
-        return productService.updatePrice(id, request);
+        // Old PATCH contract: when both are sent, profit % wins.
+        return productService.setPrice(id, new CreateProductPriceRequest(
+                request.purchasePrice(),
+                request.profitPercentage(),
+                request.profitPercentage() != null ? null : request.sellingPrice()));
     }
 
     @GetMapping("/{id}")
@@ -67,6 +125,34 @@ public class ProductController {
     public ProductResponse getById(@PathVariable Long id) {
 
         return productService.getById(id);
+    }
+
+
+    // =========================================================
+    // GET CURRENT PRICE
+    // =========================================================
+
+    @GetMapping("/{id}/price")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    public ResponseEntity<ProductPriceResponse> getPrice(
+            @PathVariable Long id) {
+
+        return ResponseEntity.ok(
+                productService.getPrice(id)
+        );
+    }
+
+
+    // =========================================================
+    // DELETE (soft)
+    // =========================================================
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable Long id) {
+
+        productService.delete(id);
     }
 
     @GetMapping

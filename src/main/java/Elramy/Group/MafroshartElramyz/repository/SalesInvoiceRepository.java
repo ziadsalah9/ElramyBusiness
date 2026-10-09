@@ -18,4 +18,8 @@ public interface SalesInvoiceRepository
     List<SalesInvoice> findByCashierIdOrderByCreatedAtDesc(Long cashierId);
 
    List <SalesInvoice> findByCustomerId(Long id);
+
+    boolean existsByCustomerId(Long customerId);
+
+    List<SalesInvoice> findByBranchIdAndCreatedAtBetween(Long branchId, java.time.LocalDateTime start, java.time.LocalDateTime end);
 }

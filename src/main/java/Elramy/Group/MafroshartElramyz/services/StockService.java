@@ -1,41 +1,17 @@
 package Elramy.Group.MafroshartElramyz.services;
 
 import Elramy.Group.MafroshartElramyz.enums.TransactionType;
-import Elramy.Group.MafroshartElramyz.enums.stock.StockResponse;
-import Elramy.Group.MafroshartElramyz.enums.stock.StockTransactionResponse;
 
 import java.math.BigDecimal;
-import java.util.List;
 
+/**
+ * Stock movements per variant (colour × size, V11). Every movement locks
+ * the variant row and writes one stock_transactions ledger row.
+ */
 public interface StockService {
 
-    // =========================
-    // Stock Queries
-    // =========================
-
-    StockResponse getById(Long id);
-
-    StockResponse getByProductAndBranch(
-            Long productId,
-            Long branchId
-    );
-
-    List<StockResponse> getAll();
-
-    List<StockResponse> getByProduct(Long productId);
-
-    List<StockResponse> getByBranch(Long branchId);
-
-    List<StockResponse> getLowStock();
-
-
-    // =========================
-    // Stock Operations
-    // =========================
-
     void increaseStock(
-            Long productId,
-            Long branchId,
+            Long variantId,
             Integer quantity,
             TransactionType transactionType,
             BigDecimal unitPrice,
@@ -44,31 +20,14 @@ public interface StockService {
             String notes
     );
 
+    /** Throws IllegalArgumentException when the variant has not enough stock. */
     void decreaseStock(
-            Long productId,
-            Long branchId,
+            Long variantId,
             Integer quantity,
             TransactionType transactionType,
             BigDecimal unitPrice,
             Long referenceId,
             String referenceType,
             String notes
-    );
-
-
-    // =========================
-    // Transactions History
-    // =========================
-
-    List<StockTransactionResponse> getTransactions(
-            Long productStockId
-    );
-
-    List<StockTransactionResponse> getTransactionsByProduct(
-            Long productId
-    );
-
-    List<StockTransactionResponse> getTransactionsByBranch(
-            Long branchId
     );
 }

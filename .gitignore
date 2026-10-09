@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Local runtime files ###
+backend.log
+backend.pid
+.DS_Store

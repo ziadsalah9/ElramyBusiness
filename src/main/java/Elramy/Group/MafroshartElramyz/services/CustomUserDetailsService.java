@@ -34,7 +34,7 @@ public class CustomUserDetailsService
                 .username(user.getUsername())
                 .password(user.getPassword())
                 .roles(user.getRole().name())
-                .disabled(!user.getActive())
+                .disabled(!Boolean.TRUE.equals(user.getActive()))
                 .build();
     }
 }

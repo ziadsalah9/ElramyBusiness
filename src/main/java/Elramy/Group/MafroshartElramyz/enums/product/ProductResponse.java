@@ -1,6 +1,6 @@
 package Elramy.Group.MafroshartElramyz.enums.product;
 
-import java.math.BigDecimal;
+import java.util.List;
 
 public record ProductResponse(
 
@@ -8,24 +8,27 @@ public record ProductResponse(
 
         String code,
 
-        String barcode,
-
         String name,
 
         String model,
 
         String itemType,
 
-        String color,
-
-        String size,
-
-
+        /** One price for every variant; null until priced. */
         ProductPriceResponse currentPrice,
 
         Integer minimumQuantity,
 
-        Boolean active
+        Boolean active,
+
+        /** Total stock across the active variants. */
+        Integer quantity,
+
+        /** quantity <= minimumQuantity (on the product total). */
+        Boolean lowStock,
+
+        /** Active variants (colour × size), each with its own stock and code. */
+        List<ProductVariantResponse> variants
 
 ) {
 }

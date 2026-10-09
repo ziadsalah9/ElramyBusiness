@@ -5,6 +5,7 @@ public record CustomerResponse(
         Long id,
         String name,
         String phone,
+        String secondaryPhone,
         String address,
         Boolean active
 

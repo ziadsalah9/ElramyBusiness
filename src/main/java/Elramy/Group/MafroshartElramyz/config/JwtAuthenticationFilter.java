@@ -99,18 +99,29 @@ public class JwtAuthenticationFilter
             // =================================================
             // LOAD USER
             // =================================================
+            // A deleted or missing user must produce 401, not 500.
 
-            UserDetails userDetails =
-                    userDetailsService
-                            .loadUserByUsername(username);
+            UserDetails userDetails;
 
-            System.out.println(
-                    "USERNAME: " + userDetails.getUsername()
-            );
+            try {
+                userDetails =
+                        userDetailsService
+                                .loadUserByUsername(username);
+            } catch (Exception e) {
+                filterChain.doFilter(request, response);
+                return;
+            }
 
-            System.out.println(
-                    "AUTHORITIES: " + userDetails.getAuthorities()
-            );
+            // =================================================
+            // ENABLED CHECK
+            // =================================================
+            // A deactivated user must not stay authenticated
+            // with a still-valid JWT until it expires.
+
+            if (!userDetails.isEnabled()) {
+                filterChain.doFilter(request, response);
+                return;
+            }
 
             // =================================================
             // VALIDATE TOKEN

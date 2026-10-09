@@ -12,26 +12,29 @@ import java.util.List;
 
 public record SalesInvoiceRequest(
 
-        @NotNull
+        @NotNull(message = "Branch is required")
         Long branchId,
 
+        @Valid
+        @NotNull(message = "بيانات العميل مطلوبة")
         CustomerInvoiceRequest customer,
 
 
-        @NotNull
+        @NotNull(message = "Payment method is required")
         PaymentMethod paymentMethod,
 
-        @NotEmpty
-        List<SalesInvoiceItemRequest> items,
+        @NotEmpty(message = "At least one item is required")
+        List<@Valid SalesInvoiceItemRequest> items,
 
-        @NotNull
-        @DecimalMin("0.0")
+        @NotNull(message = "Invoice discount is required")
+        @DecimalMin(value = "0.0", message = "Invoice discount cannot be negative")
         BigDecimal discount,
 
-        @NotNull
-        @DecimalMin("0.0")
+        @NotNull(message = "Paid amount is required")
+        @DecimalMin(value = "0.0", message = "Paid amount cannot be negative")
         BigDecimal paid,
 
+        @jakarta.validation.constraints.Size(max = 500)
         String notes
 
 ) {

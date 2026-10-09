@@ -16,6 +16,10 @@ public interface SalesInvoiceService {
 
     SalesInvoiceResponse getById(Long id);
 
+    SalesInvoiceResponse getByInvoiceNumber(
+            String invoiceNumber
+    );
+
     List<SalesInvoiceResponse> getAll();
 
     List<SalesInvoiceResponse> getByBranch(

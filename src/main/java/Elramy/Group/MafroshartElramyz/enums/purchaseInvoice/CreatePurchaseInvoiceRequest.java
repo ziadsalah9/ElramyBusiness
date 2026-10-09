@@ -9,26 +9,28 @@ import java.util.List;
 
 public record CreatePurchaseInvoiceRequest(
 
-        @NotBlank
+        @NotBlank(message = "Invoice number is required")
+        @jakarta.validation.constraints.Size(max = 50)
         String invoiceNumber,
 
-        @NotNull
+        @NotNull(message = "Branch is required")
         Long branchId,
 
-        @DecimalMin(value = "0.0")
+        @DecimalMin(value = "0.0", message = "Invoice discount cannot be negative")
         BigDecimal discount,
 
-        @DecimalMin(value = "0.0")
+        @DecimalMin(value = "0.0", message = "Paid amount cannot be negative")
         BigDecimal paid,
 
-        @NotNull
+        @NotNull(message = "Payment method is required")
         PaymentMethod paymentMethod,
 
+        @jakarta.validation.constraints.Size(max = 500)
         String notes,
 
-        @NotEmpty
+        @NotEmpty(message = "At least one item is required")
         @Valid
-        List<PurchaseInvoiceItemRequest> items
+        List<@Valid PurchaseInvoiceItemRequest> items
 
 ) {
 }

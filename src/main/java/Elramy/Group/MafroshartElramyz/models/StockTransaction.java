@@ -19,9 +19,16 @@ public class StockTransaction extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // Movements reference the product (V8). The legacy product_stock_id
+    // column is kept in the table, unmapped, as history.
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_stock_id")
-    private ProductStock productStock;
+    @JoinColumn(name = "product_id")
+    private Product product;
+
+    // The exact colour/size that moved (V11).
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "variant_id")
+    private ProductVariant variant;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

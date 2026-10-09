@@ -11,7 +11,7 @@ public record CreateUserRequest(
         String username,
 
         @NotBlank(message = "Password is required")
-        @Size(min = 6, message = "Password must be at least 6 characters")
+        @Size(min = 10, message = "Password must be at least 10 characters")
         String password,
 
         @NotBlank(message = "Full name is required")

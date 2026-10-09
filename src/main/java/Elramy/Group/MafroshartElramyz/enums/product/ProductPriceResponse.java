@@ -7,6 +7,8 @@ public record ProductPriceResponse(
 
         Long id,
 
+        Long productId,
+
         BigDecimal purchasePrice,
 
         BigDecimal sellingPrice,

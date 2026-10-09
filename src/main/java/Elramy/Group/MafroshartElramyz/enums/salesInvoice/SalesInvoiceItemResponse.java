@@ -22,7 +22,13 @@ public record SalesInvoiceItemResponse(
 
         BigDecimal discount,
 
-        BigDecimal total
+        BigDecimal total,
+
+        // The colour/size sold or bought (V11); null on very old lines.
+        Long variantId,
+        String variantCode,
+        String color,
+        String size
 
 
 

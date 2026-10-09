@@ -60,6 +60,20 @@
 			<artifactId>spring-boot-starter-validation</artifactId>
 		</dependency>
 
+		<!-- Schema migrations / hardening. Flyway runs before Hibernate,
+		     so migrations are written to be idempotent and no-op on a
+		     fresh database whose tables Hibernate has not created yet.
+		     Spring Boot 4 ships the Flyway auto-configuration in the
+		     starter (spring-boot-flyway), not in spring-boot-autoconfigure. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-flyway</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-database-postgresql</artifactId>
+		</dependency>
+
 		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>

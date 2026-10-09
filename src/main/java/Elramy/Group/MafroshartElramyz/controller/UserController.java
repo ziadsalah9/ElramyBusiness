@@ -1,6 +1,7 @@
 package Elramy.Group.MafroshartElramyz.controller;
 
 import Elramy.Group.MafroshartElramyz.enums.user.CreateUserRequest;
+import Elramy.Group.MafroshartElramyz.enums.user.UpdateUserRequest;
 import Elramy.Group.MafroshartElramyz.enums.user.UserResponse;
 import Elramy.Group.MafroshartElramyz.services.UserService;
 import jakarta.validation.Valid;
@@ -32,6 +33,22 @@ public class UserController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(userService.create(request));
+    }
+
+
+    // =========================================================
+    // UPDATE USER
+    // =========================================================
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserResponse> update(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateUserRequest request) {
+
+        return ResponseEntity.ok(
+                userService.update(id, request)
+        );
     }
 
 

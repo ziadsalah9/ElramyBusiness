@@ -108,7 +108,15 @@ public class SalesInvoiceMapper {
 
                 item.getDiscount(),
 
-                item.getTotal()
+                item.getTotal(),
+
+                item.getVariant() != null ? item.getVariant().getId() : null,
+
+                item.getVariant() != null ? item.getVariant().getCode() : null,
+
+                item.getVariant() != null ? item.getVariant().getColor() : null,
+
+                item.getVariant() != null ? item.getVariant().getSize() : null
         );
     }
 }

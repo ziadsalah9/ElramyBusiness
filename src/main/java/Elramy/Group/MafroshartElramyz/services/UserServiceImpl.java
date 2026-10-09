@@ -1,9 +1,15 @@
 package Elramy.Group.MafroshartElramyz.services;
 
+import Elramy.Group.MafroshartElramyz.activity.ActivityAction;
+import Elramy.Group.MafroshartElramyz.activity.ActivityEntity;
+import Elramy.Group.MafroshartElramyz.activity.ActivityLogService;
+import Elramy.Group.MafroshartElramyz.activity.Changes;
 import Elramy.Group.MafroshartElramyz.enums.Role;
 import Elramy.Group.MafroshartElramyz.enums.user.CreateUserRequest;
+import Elramy.Group.MafroshartElramyz.enums.user.UpdateUserRequest;
 import Elramy.Group.MafroshartElramyz.enums.user.UserResponse;
 import Elramy.Group.MafroshartElramyz.exception.BranchAccessDeniedException;
+import Elramy.Group.MafroshartElramyz.exception.BranchNotFoundException;
 import Elramy.Group.MafroshartElramyz.exception.UnauthorizedException;
 import Elramy.Group.MafroshartElramyz.exception.UserNotFoundException;
 import Elramy.Group.MafroshartElramyz.models.Branch;
@@ -26,6 +32,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final BranchRepository branchRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ActivityLogService activityLog;
 
 
     // =========================================================
@@ -43,7 +50,7 @@ public class UserServiceImpl implements UserService {
         if (userRepository.existsByUsername(
                 request.username())) {
 
-            throw new RuntimeException(
+            throw new IllegalArgumentException(
                     "Username already exists: "
                             + request.username()
             );
@@ -61,45 +68,7 @@ public class UserServiceImpl implements UserService {
             );
         }
 
-
-        // =====================================================
-        // CHECK ADMIN LIMIT
-        // =====================================================
-
-        if (request.role() == Role.ADMIN) {
-
-            long adminCount =
-                    userRepository.countByRoleAndActiveTrue(
-                            Role.ADMIN
-                    );
-
-            if (adminCount >= 3) {
-
-                throw new IllegalArgumentException(
-                        "Maximum number of active admins is 3"
-                );
-            }
-        }
-
-
-        // =====================================================
-        // CHECK EMPLOYEE LIMIT
-        // =====================================================
-
-        if (request.role() == Role.EMPLOYEE) {
-
-            long employeeCount =
-                    userRepository.countByRoleAndActiveTrue(
-                            Role.EMPLOYEE
-                    );
-
-            if (employeeCount >= 10) {
-
-                throw new IllegalArgumentException(
-                        "Maximum number of active employees is 10"
-                );
-            }
-        }
+        validatePassword(request.password());
 
 
         // =====================================================
@@ -121,9 +90,8 @@ public class UserServiceImpl implements UserService {
                     branchRepository
                             .findById(request.branchId())
                             .orElseThrow(() ->
-                                    new RuntimeException(
-                                            "Branch not found with id: "
-                                                    + request.branchId()
+                                    new BranchNotFoundException(
+                                            request.branchId()
                                     )
                             );
         }
@@ -162,12 +130,159 @@ public class UserServiceImpl implements UserService {
         User savedUser =
                 userRepository.save(user);
 
+        // Never log the password itself.
+        activityLog.record(ActivityEntity.USER, ActivityAction.CREATE, savedUser.getId(), userLabel(savedUser),
+                "إضافة مستخدم «" + savedUser.getFullName() + "»",
+                Changes.of().set("اسم المستخدم", savedUser.getUsername()).set("الاسم", savedUser.getFullName())
+                        .set("الدور", savedUser.getRole())
+                        .set("الفرع", savedUser.getBranch() != null ? savedUser.getBranch().getName() : null));
+
 
         // =====================================================
         // RESPONSE
         // =====================================================
 
         return toResponse(savedUser);
+    }
+
+
+    // =========================================================
+    // UPDATE USER
+    // =========================================================
+
+    @Override
+    public UserResponse update(
+            Long id,
+            UpdateUserRequest request) {
+
+        User user =
+                userRepository.findById(id)
+                        .orElseThrow(() ->
+                                new UserNotFoundException(id)
+                        );
+
+        // =====================================================
+        // USERNAME
+        // =====================================================
+
+        String username = request.username().trim();
+
+        if (!username.equals(user.getUsername())
+                && userRepository.existsByUsername(username)) {
+
+            throw new IllegalArgumentException(
+                    "Username already exists: " + username
+            );
+        }
+
+        // =====================================================
+        // BRANCH (EMPLOYEE must belong to a branch, ADMIN must not)
+        // =====================================================
+
+        Branch branch = null;
+
+        if (request.role() == Role.EMPLOYEE) {
+
+            if (request.branchId() == null) {
+
+                throw new IllegalArgumentException(
+                        "Employee must be assigned to a branch"
+                );
+            }
+
+            branch =
+                    branchRepository
+                            .findById(request.branchId())
+                            .orElseThrow(() ->
+                                    new BranchNotFoundException(
+                                            request.branchId()
+                                    )
+                            );
+
+        } else {
+            // ADMIN is not scoped to a branch.
+            branch = null;
+        }
+
+        // =====================================================
+        // LAST-ADMIN GUARD
+        // =====================================================
+        // Demoting or deactivating the final active ADMIN would
+        // permanently lock the system, so it is blocked.
+
+        boolean demotingLastAdmin =
+                Boolean.TRUE.equals(user.getActive())
+                        && user.getRole() == Role.ADMIN
+                        && (request.role() != Role.ADMIN
+                        || Boolean.FALSE.equals(request.active()));
+
+        // Same rule as deactivate(): an admin cannot lock themselves out
+        // through the edit form (role change or "inactive").
+        boolean self = user.getId().equals(getCurrentUser().getId());
+        if (self && (request.role() != Role.ADMIN || Boolean.FALSE.equals(request.active()))) {
+            throw new IllegalArgumentException("لا يمكنك إلغاء صلاحية المدير أو تعطيل حسابك بنفسك.");
+        }
+
+        if (demotingLastAdmin
+                && countActiveAdmins() <= 1) {
+
+            throw new IllegalArgumentException(
+                    "Cannot remove the last active administrator"
+            );
+        }
+
+        // =====================================================
+        // PASSWORD POLICY
+        // =====================================================
+
+        if (request.password() != null
+                && !request.password().isBlank()) {
+
+            validatePassword(request.password());
+        }
+
+        // =====================================================
+        // APPLY CHANGES
+        // =====================================================
+
+        boolean passwordChanged = request.password() != null && !request.password().isBlank();
+        Changes changes = Changes.of()
+                .add("اسم المستخدم", user.getUsername(), username)
+                .add("الاسم", user.getFullName(), request.fullName().trim())
+                .add("الدور", user.getRole(), request.role())
+                .add("الفرع", user.getBranch() != null ? user.getBranch().getName() : null, branch != null ? branch.getName() : null);
+        if (request.active() != null) changes.add("نشط", user.getActive(), request.active());
+        if (passwordChanged) changes.add("كلمة المرور", null, "تم تغييرها");
+
+        user.setUsername(username);
+
+        user.setFullName(request.fullName().trim());
+
+        user.setRole(request.role());
+
+        user.setBranch(branch);
+
+        if (request.active() != null) {
+            user.setActive(request.active());
+        }
+
+        // Password is only changed when a new one is supplied.
+        if (request.password() != null
+                && !request.password().isBlank()) {
+
+            user.setPassword(
+                    passwordEncoder.encode(
+                            request.password()
+                    )
+            );
+        }
+
+        User saved = userRepository.save(user);
+        if (!changes.isEmpty()) {
+            activityLog.record(ActivityEntity.USER, ActivityAction.UPDATE, saved.getId(), userLabel(saved),
+                    "تعديل مستخدم «" + saved.getFullName() + "»", changes);
+        }
+        return toResponse(saved);
     }
 
 
@@ -182,10 +297,7 @@ public class UserServiceImpl implements UserService {
         User user =
                 userRepository.findById(id)
                         .orElseThrow(() ->
-                                new RuntimeException(
-                                        "User not found with id: "
-                                                + id
-                                )
+                                new UserNotFoundException(id)
                         );
 
         return toResponse(user);
@@ -220,10 +332,7 @@ public class UserServiceImpl implements UserService {
         User user =
                 userRepository.findByUsername(username)
                         .orElseThrow(() ->
-                                new RuntimeException(
-                                        "User not found with username: "
-                                                + username
-                                )
+                                new UserNotFoundException(username)
                         );
 
         return toResponse(user);
@@ -276,17 +385,15 @@ public class UserServiceImpl implements UserService {
         User user =
                 userRepository.findById(id)
                         .orElseThrow(() ->
-                                new RuntimeException(
-                                        "User not found with id: "
-                                                + id
-                                )
+                                new UserNotFoundException(id)
                         );
 
         user.setActive(true);
 
-        return toResponse(
-                userRepository.save(user)
-        );
+        User saved = userRepository.save(user);
+        activityLog.record(ActivityEntity.USER, ActivityAction.STATUS, saved.getId(), userLabel(saved),
+                "تفعيل مستخدم «" + saved.getFullName() + "»");
+        return toResponse(saved);
     }
 
 
@@ -300,17 +407,64 @@ public class UserServiceImpl implements UserService {
         User user =
                 userRepository.findById(id)
                         .orElseThrow(() ->
-                                new RuntimeException(
-                                        "User not found with id: "
-                                                + id
-                                )
+                                new UserNotFoundException(id)
                         );
+
+        // Self-deactivation is blocked: an admin must never
+        // remove their own access by accident.
+        if (user.getId().equals(getCurrentUser().getId())) {
+
+            throw new IllegalArgumentException(
+                    "You cannot deactivate your own account"
+            );
+        }
+
+        // Last active ADMIN must remain.
+        if (user.getRole() == Role.ADMIN
+                && Boolean.TRUE.equals(user.getActive())
+                && countActiveAdmins() <= 1) {
+
+            throw new IllegalArgumentException(
+                    "Cannot remove the last active administrator"
+            );
+        }
 
         user.setActive(false);
 
-        return toResponse(
-                userRepository.save(user)
-        );
+        User saved = userRepository.save(user);
+        activityLog.record(ActivityEntity.USER, ActivityAction.STATUS, saved.getId(), userLabel(saved),
+                "تعطيل مستخدم «" + saved.getFullName() + "»");
+        return toResponse(saved);
+    }
+
+    // =====================================================
+    // PASSWORD POLICY
+    // =====================================================
+    // Production requirement: at least 10 characters, with at
+    // least one letter and one digit.
+
+    private void validatePassword(String password) {
+
+        if (password == null || password.length() < 10) {
+
+            throw new IllegalArgumentException(
+                    "Password must be at least 10 characters long"
+            );
+        }
+
+        boolean hasLetter = password.chars().anyMatch(Character::isLetter);
+        boolean hasDigit = password.chars().anyMatch(Character::isDigit);
+
+        if (!hasLetter || !hasDigit) {
+
+            throw new IllegalArgumentException(
+                    "Password must contain at least one letter and one digit"
+            );
+        }
+    }
+
+    private long countActiveAdmins() {
+        return userRepository.countByRoleAndActiveTrue(Role.ADMIN);
     }
 
     @Override
@@ -331,6 +485,16 @@ public class UserServiceImpl implements UserService {
                 new UserNotFoundException(
                         username
                 )
+        );
+    }
+
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserResponse getCurrentUserResponse() {
+
+        return toResponse(
+                getCurrentUser()
         );
     }
 
@@ -393,5 +557,31 @@ public class UserServiceImpl implements UserService {
                     "You cannot access another branch"
             );
         }
+    }
+
+
+    @Override
+    public Long getEffectiveBranchId(Long requestedBranchId) {
+
+        User currentUser = getCurrentUser();
+
+        if (currentUser.getRole() == Role.ADMIN) {
+            return requestedBranchId;
+        }
+
+        // EMPLOYEE is always scoped to their own branch.
+        if (requestedBranchId != null) {
+            validateBranchAccess(requestedBranchId);
+        }
+
+        // null means "every branch", which only an ADMIN may get.
+        if (currentUser.getBranch() == null) {
+            throw new BranchAccessDeniedException("حسابك غير مرتبط بفرع. تواصل مع المدير.");
+        }
+        return currentUser.getBranch().getId();
+    }
+
+    private static String userLabel(User u) {
+        return u.getFullName() + " (" + u.getUsername() + ")";
     }
 }

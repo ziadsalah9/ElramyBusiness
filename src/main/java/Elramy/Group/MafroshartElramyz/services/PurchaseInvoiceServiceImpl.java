@@ -1,12 +1,18 @@
 package Elramy.Group.MafroshartElramyz.services;
 
+import Elramy.Group.MafroshartElramyz.activity.ActivityAction;
+import Elramy.Group.MafroshartElramyz.activity.ActivityEntity;
+import Elramy.Group.MafroshartElramyz.activity.ActivityLogService;
+import Elramy.Group.MafroshartElramyz.activity.Changes;
 import Elramy.Group.MafroshartElramyz.enums.TransactionType;
 
 import Elramy.Group.MafroshartElramyz.enums.purchaseInvoice.CreatePurchaseInvoiceRequest;
 import Elramy.Group.MafroshartElramyz.enums.purchaseInvoice.PurchaseInvoiceImportRow;
 import Elramy.Group.MafroshartElramyz.enums.purchaseInvoice.PurchaseInvoiceItemRequest;
 import Elramy.Group.MafroshartElramyz.enums.purchaseInvoice.PurchaseInvoiceResponse;
+import Elramy.Group.MafroshartElramyz.exception.BranchNotFoundException;
 import Elramy.Group.MafroshartElramyz.exception.DuplicatePurchaseInvoiceException;
+import Elramy.Group.MafroshartElramyz.exception.ProductNotFoundException;
 import Elramy.Group.MafroshartElramyz.exception.PurchaseInvoiceNotFoundException;
 import Elramy.Group.MafroshartElramyz.mapping.PurchaseInvoiceMapper;
 import Elramy.Group.MafroshartElramyz.models.Branch;
@@ -15,6 +21,9 @@ import Elramy.Group.MafroshartElramyz.models.PurchaseInvoice;
 import Elramy.Group.MafroshartElramyz.models.PurchaseInvoiceItem;
 import Elramy.Group.MafroshartElramyz.repository.BranchRepository;
 import Elramy.Group.MafroshartElramyz.repository.ProductRepository;
+import Elramy.Group.MafroshartElramyz.repository.ProductVariantRepository;
+import Elramy.Group.MafroshartElramyz.models.ProductVariant;
+import Elramy.Group.MafroshartElramyz.exception.ResourceNotFoundException;
 import Elramy.Group.MafroshartElramyz.repository.PurchaseInvoiceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -34,11 +43,13 @@ public class PurchaseInvoiceServiceImpl
 
     private final PurchaseInvoiceRepository purchaseInvoiceRepository;
     private final ProductRepository productRepository;
+    private final ProductVariantRepository variantRepository;
     private final BranchRepository branchRepository;
 
     private final PurchaseInvoiceMapper purchaseInvoiceMapper;
     private final StockService stockService;
     private final UserService userService;
+    private final ActivityLogService activityLog;
 
 
     // =========================================================
@@ -69,9 +80,8 @@ public class PurchaseInvoiceServiceImpl
         Branch branch = branchRepository
                 .findById(request.branchId())
                 .orElseThrow(() ->
-                        new RuntimeException(
-                                "Branch not found with id: "
-                                        + request.branchId()
+                        new BranchNotFoundException(
+                                request.branchId()
                         )
                 );
 
@@ -113,14 +123,8 @@ public class PurchaseInvoiceServiceImpl
         for (PurchaseInvoiceItemRequest itemRequest
                 : request.items()) {
 
-            Product product = productRepository
-                    .findById(itemRequest.productId())
-                    .orElseThrow(() ->
-                            new RuntimeException(
-                                    "Product not found with id: "
-                                            + itemRequest.productId()
-                            )
-                    );
+            ProductVariant variant = activeVariant(itemRequest.variantId());
+            Product product = variant.getProduct();
 
 
             BigDecimal discount =
@@ -151,6 +155,7 @@ public class PurchaseInvoiceServiceImpl
                     PurchaseInvoiceItem.builder()
                             .invoice(invoice)
                             .product(product)
+                            .variant(variant)
                             .quantity(itemRequest.quantity())
                             .unitPrice(itemRequest.unitPrice())
                             .discount(discount)
@@ -218,13 +223,14 @@ public class PurchaseInvoiceServiceImpl
         // 8. Increase stock
         // -----------------------------------------------------
 
-        for (PurchaseInvoiceItem item : invoice.getItems()) {
+        // Locked in id order: no deadlock with concurrent invoices.
+        for (PurchaseInvoiceItem item : invoice.getItems().stream()
+                .sorted(java.util.Comparator.comparing((PurchaseInvoiceItem i) -> i.getVariant().getId()))
+                .toList()) {
 
             stockService.increaseStock(
 
-                    item.getProduct().getId(),
-
-                    branch.getId(),
+                        item.getVariant().getId(),
 
                     item.getQuantity(),
 
@@ -248,6 +254,7 @@ public class PurchaseInvoiceServiceImpl
         // 9. Return response
         // -----------------------------------------------------
 
+        logPurchase(invoice, false);
         return purchaseInvoiceMapper.toResponse(invoice);
     }
 
@@ -332,8 +339,14 @@ public class PurchaseInvoiceServiceImpl
         Map<String, List<PurchaseInvoiceImportRow>> groupedInvoices =
                 rows.stream()
                         .filter(Objects::nonNull)
+                        // groupingBy rejects a null key (500 instead of the
+                        // "empty invoice number" message below); a blank key
+                        // keeps those rows together so that check reports them.
+                        // LinkedHashMap keeps the file's order.
                         .collect(Collectors.groupingBy(
-                                PurchaseInvoiceImportRow::invoiceNumber
+                                r -> r.invoiceNumber() == null ? "" : r.invoiceNumber().trim(),
+                                java.util.LinkedHashMap::new,
+                                Collectors.toList()
                         ));
 
         List<PurchaseInvoiceResponse> responses = new java.util.ArrayList<>();
@@ -397,10 +410,7 @@ public class PurchaseInvoiceServiceImpl
             Branch branch = branchRepository
                     .findById(branchId)
                     .orElseThrow(() ->
-                            new RuntimeException(
-                                    "Branch not found with id: "
-                                            + branchId
-                            )
+                            new BranchNotFoundException(branchId)
                     );
 
             // =====================================================
@@ -418,6 +428,7 @@ public class PurchaseInvoiceServiceImpl
                             )
                             .notes(invoiceRows.get(0).notes())
                             .total(BigDecimal.ZERO)
+                            .createdBy(userService.getCurrentUser())
                             .build();
 
             // =====================================================
@@ -461,14 +472,8 @@ public class PurchaseInvoiceServiceImpl
                 // Find product by CODE
                 // ---------------------------------------------
 
-                Product product = productRepository
-                        .findByCode(row.productCode())
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Product not found with code: "
-                                                + row.productCode()
-                                )
-                        );
+                ProductVariant variant = variantByCode(row.productCode());
+                Product product = variant.getProduct();
 
                 // ---------------------------------------------
                 // Discount
@@ -510,6 +515,7 @@ public class PurchaseInvoiceServiceImpl
                         PurchaseInvoiceItem.builder()
                                 .invoice(invoice)
                                 .product(product)
+                                .variant(variant)
                                 .quantity(row.quantity())
                                 .unitPrice(row.unitPrice())
                                 .discount(discount)
@@ -559,13 +565,14 @@ public class PurchaseInvoiceServiceImpl
             // 7. Increase stock
             // =====================================================
 
-            for (PurchaseInvoiceItem item : invoice.getItems()) {
+            // Locked in id order: no deadlock with concurrent invoices.
+            for (PurchaseInvoiceItem item : invoice.getItems().stream()
+                    .sorted(java.util.Comparator.comparing((PurchaseInvoiceItem i) -> i.getVariant().getId()))
+                    .toList()) {
 
                 stockService.increaseStock(
 
-                        item.getProduct().getId(),
-
-                        branch.getId(),
+                        item.getVariant().getId(),
 
                         item.getQuantity(),
 
@@ -586,6 +593,7 @@ public class PurchaseInvoiceServiceImpl
             // 8. Response
             // =====================================================
 
+            logPurchase(invoice, true);
             responses.add(
                     purchaseInvoiceMapper.toResponse(invoice)
             );
@@ -595,4 +603,48 @@ public class PurchaseInvoiceServiceImpl
     }
 
 
+
+    // =========================================================
+    // VARIANT HELPERS
+    // =========================================================
+
+    /** The variant being bought; must exist and be active. */
+    private ProductVariant activeVariant(Long variantId) {
+        ProductVariant v = variantRepository.findById(variantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product variant " + variantId + " not found."));
+        if (Boolean.FALSE.equals(v.getActive())) {
+            throw new IllegalArgumentException("هذا اللون/المقاس غير نشط: " + v.getProduct().getName() + " (" + v.label() + ")");
+        }
+        return v;
+    }
+
+    /**
+     * Excel import: the code is a variant code (PRD-XXXX-2) or, for a
+     * product with exactly one active variant, the product code.
+     */
+    private ProductVariant variantByCode(String code) {
+        String c = code.trim();
+        var byVariant = variantRepository.findByCode(c).or(() -> variantRepository.findByBarcode(c));
+        if (byVariant.isPresent()) return activeVariant(byVariant.get().getId());
+        Product product = productRepository.findByCode(c)
+                .orElseThrow(() -> new ProductNotFoundException(c));
+        var active = product.activeVariants();
+        if (active.size() != 1) {
+            throw new IllegalArgumentException("المنتج " + c + " له أكثر من لون/مقاس؛ استخدم كود اللون/المقاس (مثل " + c + "-1).");
+        }
+        return active.get(0);
+    }
+
+    private void logPurchase(PurchaseInvoice invoice, boolean imported) {
+        activityLog.record(ActivityEntity.PURCHASE_INVOICE, imported ? ActivityAction.IMPORT : ActivityAction.CREATE,
+                invoice.getId(), invoice.getInvoiceNumber(),
+                (imported ? "استيراد فاتورة شراء " : "فاتورة شراء ") + invoice.getInvoiceNumber()
+                        + " بإجمالي " + invoice.getTotal().stripTrailingZeros().toPlainString() + " ج.م",
+                SalesInvoiceServiceImpl.invoiceLines(invoice.getItems().stream()
+                        .map(i -> SalesInvoiceServiceImpl.lineText(i.getProduct().getName(), i.getVariant(), i.getQuantity(), i.getTotal()))
+                        .toList())
+                        .set("الخصم", invoice.getDiscount())
+                        .set("المدفوع", invoice.getPaid())
+                        .set("طريقة الدفع", invoice.getPaymentMethod()));
+    }
 }

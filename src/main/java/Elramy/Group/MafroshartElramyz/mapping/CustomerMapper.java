@@ -13,6 +13,7 @@ public class CustomerMapper {
                 customer.getId(),
                 customer.getName(),
                 customer.getPhone(),
+                customer.getSecondaryPhone(),
                 customer.getAddress(),
                 customer.getActive()
         );

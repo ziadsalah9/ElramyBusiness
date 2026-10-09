@@ -2,12 +2,18 @@ package Elramy.Group.MafroshartElramyz.controller;
 
 import Elramy.Group.MafroshartElramyz.enums.Security.LoginRequest;
 import Elramy.Group.MafroshartElramyz.enums.Security.LoginResponse;
+import Elramy.Group.MafroshartElramyz.enums.user.UserResponse;
 import Elramy.Group.MafroshartElramyz.models.User;
 import Elramy.Group.MafroshartElramyz.repository.UserRepository;
 import Elramy.Group.MafroshartElramyz.services.JwtService;
+import Elramy.Group.MafroshartElramyz.services.LoginAttemptService;
+import Elramy.Group.MafroshartElramyz.services.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -21,6 +27,8 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final UserRepository userRepository;
+    private final UserService userService;
+    private final LoginAttemptService loginAttempts;
 
 
     // =========================================================
@@ -29,15 +37,22 @@ public class AuthController {
 
     @PostMapping("/login")
     public LoginResponse login(
-            @Valid @RequestBody LoginRequest request) {
+            @Valid @RequestBody LoginRequest request,
+            HttpServletRequest httpRequest) {
 
-        Authentication authentication =
-                authenticationManager.authenticate(
-                        new UsernamePasswordAuthenticationToken(
-                                request.username(),
-                                request.password()
-                        )
-                );
+        // The direct peer address: X-Forwarded-For is client-controlled.
+        String address = httpRequest.getRemoteAddr();
+        loginAttempts.checkAllowed(request.username(), address);
+
+        Authentication authentication;
+        try {
+            authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.username(), request.password()));
+        } catch (BadCredentialsException | DisabledException ex) {
+            loginAttempts.loginFailed(request.username(), address);
+            throw ex;
+        }
+        loginAttempts.loginSucceeded(request.username());
 
 
         UserDetails userDetails =
@@ -52,14 +67,10 @@ public class AuthController {
 
         User user =
                 userRepository
-                        .findByUsername(
+                        .findWithBranchByUsername(
                                 request.username()
                         )
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "User not found"
-                                )
-                        );
+                        .orElseThrow(() -> new BadCredentialsException("Invalid username or password"));
 
 
         return new LoginResponse(
@@ -82,5 +93,16 @@ public class AuthController {
                         ? user.getBranch().getName()
                         : null
         );
+    }
+
+
+    // =========================================================
+    // CURRENT USER
+    // =========================================================
+
+    @GetMapping("/me")
+    public UserResponse me() {
+
+        return userService.getCurrentUserResponse();
     }
 }

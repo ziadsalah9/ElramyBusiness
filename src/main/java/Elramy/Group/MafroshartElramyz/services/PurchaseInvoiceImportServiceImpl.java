@@ -115,6 +115,11 @@ public class PurchaseInvoiceImportServiceImpl
                     continue;
                 }
 
+                if (rows.size() == ProductImportServiceImpl.MAX_ROWS) {
+                    throw new IllegalArgumentException(
+                            "الملف يحتوي على أكثر من " + ProductImportServiceImpl.MAX_ROWS + " صف.");
+                }
+
                 rows.add(
                         mapExcelRow(row)
                 );
