@@ -4,7 +4,7 @@
 . "$PSScriptRoot\settings.ps1"
 
 $env:JWT_SECRET  = Read-Secret 'jwt.secret'
-$env:DB_URL      = "jdbc:postgresql://localhost:5432/$DbName"
+$env:DB_URL      = "jdbc:postgresql://localhost:$(Get-DbPort)/$DbName"
 $env:DB_USERNAME = $DbUser
 $env:DB_PASSWORD = Read-Secret 'db.secret'
 $adminFile = Join-Path $SecretsDir 'admin-initial.secret'

@@ -56,16 +56,16 @@ if (-not (Test-Path $dbFile)) {
     $psql = Join-Path $pgBin 'psql.exe'
 
     $dbPassword = New-RandomSecret 24
-    $roleExists = & $psql -h localhost -U postgres -d postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname = '$DbUser'"
+    $roleExists = & $psql -h localhost -p (Get-DbPort) -U postgres -d postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname = '$DbUser'"
     if ($LASTEXITCODE -ne 0) { throw 'Could not connect to PostgreSQL as "postgres". Check the password and that the PostgreSQL service is running.' }
     if ($roleExists -match '1') {
-        & $psql -h localhost -U postgres -d postgres -c "ALTER ROLE $DbUser WITH LOGIN CREATEDB PASSWORD '$dbPassword'" | Out-Null
+        & $psql -h localhost -p (Get-DbPort) -U postgres -d postgres -c "ALTER ROLE $DbUser WITH LOGIN CREATEDB PASSWORD '$dbPassword'" | Out-Null
     } else {
-        & $psql -h localhost -U postgres -d postgres -c "CREATE ROLE $DbUser WITH LOGIN CREATEDB PASSWORD '$dbPassword'" | Out-Null
+        & $psql -h localhost -p (Get-DbPort) -U postgres -d postgres -c "CREATE ROLE $DbUser WITH LOGIN CREATEDB PASSWORD '$dbPassword'" | Out-Null
     }
-    $dbExists = & $psql -h localhost -U postgres -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = '$DbName'"
+    $dbExists = & $psql -h localhost -p (Get-DbPort) -U postgres -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = '$DbName'"
     if (-not ($dbExists -match '1')) {
-        & $psql -h localhost -U postgres -d postgres -c "CREATE DATABASE `"$DbName`" OWNER $DbUser ENCODING 'UTF8' TEMPLATE template0" | Out-Null
+        & $psql -h localhost -p (Get-DbPort) -U postgres -d postgres -c "CREATE DATABASE `"$DbName`" OWNER $DbUser ENCODING 'UTF8' TEMPLATE template0" | Out-Null
     }
     if ($LASTEXITCODE -ne 0) { throw 'Creating the store database failed.' }
     Remove-Item Env:\PGPASSWORD

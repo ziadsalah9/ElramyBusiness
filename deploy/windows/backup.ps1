@@ -16,7 +16,7 @@ try {
     $env:PGPASSWORD = Read-Secret 'db.secret'
     $file = Join-Path $BackupDir ("ElramyGroup-{0}.dump" -f (Get-Date -Format 'yyyy-MM-dd_HHmm'))
     $tmp = "$file.partial"
-    & (Join-Path $pgBin 'pg_dump.exe') -h localhost -U $DbUser -Fc -f $tmp $DbName
+    & (Join-Path $pgBin 'pg_dump.exe') -h localhost -p (Get-DbPort) -U $DbUser -Fc -f $tmp $DbName
     if ($LASTEXITCODE -ne 0) { throw "pg_dump failed (exit $LASTEXITCODE)" }
     if ((Get-Item $tmp).Length -lt 1024) { Remove-Item $tmp -Force; throw 'Backup file too small, discarded.' }
     Move-Item $tmp $file -Force

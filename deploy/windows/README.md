@@ -1,6 +1,22 @@
 # مفروشات الرامي - التشغيل على لابتوب ويندوز
 # Elramy store - running on the Windows laptop
 
+> **الأسهل: `Elramy-Setup-<version>.exe`** يثبّت كل شيء وحده (البرنامج + Java + PostgreSQL) بدون إنترنت.
+> شغّله بزر الماوس الأيمن ← "تشغيل كمسؤول" واتبع الخطوات. في النهاية يفتح ملف أول دخول (المستخدم admin1 وكلمة مرور عشوائية) والمتصفح.
+> لنقل بياناتك من الماك: قائمة ابدأ ← Elramy ← "استرجاع نسخة احتياطية" واختر ملف ‎.dump.
+> للتحديث: شغّل ملف Setup الأحدث فوق القديم (يأخذ نسخة احتياطية أولاً ولا يمس البيانات).
+> إلغاء التثبيت من "التطبيقات" في ويندوز يحذف البرنامج فقط، وتبقى البيانات والنسخ في C:\Elramy.
+> سجل التثبيت: C:\Elramy\logs\setup.log
+>
+> **Easiest: `Elramy-Setup-<version>.exe`** installs everything by itself (the store, Java, PostgreSQL), no internet needed.
+> Right-click → "Run as administrator" and follow the wizard. At the end it opens the first-login note (user admin1, random password) and the browser.
+> To bring your data from the Mac: Start menu → Elramy → "Restore a backup", pick the .dump file.
+> To update: run the newer Setup over the old one (it backs up first and keeps the data).
+> Uninstalling (Windows "Apps") removes the program only; data and backups stay in C:\Elramy.
+> Setup log: C:\Elramy\logs\setup.log
+>
+> The steps below are the manual kit (the zip), for when the installer can't be used.
+
 ---
 
 ## بالعربي

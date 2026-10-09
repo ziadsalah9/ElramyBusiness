@@ -33,18 +33,22 @@ try {
 
     Write-Step 'Recreating the database'
     $psql = Join-Path $pgBin 'psql.exe'
-    & $psql -h localhost -U $DbUser -d postgres -c "DROP DATABASE IF EXISTS `"$DbName`" WITH (FORCE)" | Out-Null
+    & $psql -h localhost -p (Get-DbPort) -U $DbUser -d postgres -c "DROP DATABASE IF EXISTS `"$DbName`" WITH (FORCE)" | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'Could not drop the old database.' }
-    & $psql -h localhost -U $DbUser -d postgres -c "CREATE DATABASE `"$DbName`" ENCODING 'UTF8' TEMPLATE template0" | Out-Null
+    & $psql -h localhost -p (Get-DbPort) -U $DbUser -d postgres -c "CREATE DATABASE `"$DbName`" ENCODING 'UTF8' TEMPLATE template0" | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'Could not create the database.' }
 
     Write-Step 'Restoring'
     # --no-owner: everything belongs to the store's own user on this laptop.
-    & (Join-Path $pgBin 'pg_restore.exe') -h localhost -U $DbUser -d $DbName --no-owner --no-privileges $File
+    & (Join-Path $pgBin 'pg_restore.exe') -h localhost -p (Get-DbPort) -U $DbUser -d $DbName --no-owner --no-privileges $File
     if ($LASTEXITCODE -ne 0) { Write-Host '    pg_restore reported warnings (often harmless); check the store after it starts.' -ForegroundColor Yellow }
 } finally {
     Remove-Item Env:\PGPASSWORD -ErrorAction SilentlyContinue
 }
+
+# The restored data brings its own users, so the installer's first-login note no longer applies.
+Remove-Item (Join-Path $ElramyRoot 'FIRST-LOGIN.txt') -Force -ErrorAction SilentlyContinue
+Remove-Item (Join-Path $SecretsDir 'admin-initial.secret') -Force -ErrorAction SilentlyContinue
 
 Write-Step 'Starting the store'
 Start-ScheduledTask -TaskName $AppTask

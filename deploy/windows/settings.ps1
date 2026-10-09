@@ -9,6 +9,12 @@ $BackupDir      = Join-Path $ElramyRoot 'backups'
 
 $Port           = 8090
 $DbName         = 'ElramyGroup'
+# The Setup.exe installer bundles Java and PostgreSQL here; the zip kit uses
+# the system ones instead.
+$BundledJava    = Join-Path $ElramyRoot 'jre\bin\java.exe'
+$BundledPgBin   = Join-Path $ElramyRoot 'pgsql\bin'
+$PgDataDir      = Join-Path $ElramyRoot 'pgdata'
+$PgServiceName  = 'ElramyPostgreSQL'
 $DbUser         = 'elramy'
 
 # Backups are also copied to any USB drive whose name (volume label) is this.
@@ -22,7 +28,15 @@ $BackupTime     = '23:30'
 
 function Write-Step([string]$text) { Write-Host "==> $text" -ForegroundColor Cyan }
 
+function Get-DbPort {
+    # The bundled PostgreSQL may run on another port if 5432 was taken.
+    $file = Join-Path $SecretsDir 'pg.port'
+    if (Test-Path $file) { return [int]((Get-Content $file -Raw).Trim()) }
+    return 5432
+}
+
 function Find-PgBin {
+    if (Test-Path (Join-Path $BundledPgBin 'pg_dump.exe')) { return $BundledPgBin }
     # Newest PostgreSQL installed by the official Windows installer.
     $dirs = Get-ChildItem 'C:\Program Files\PostgreSQL' -Directory -ErrorAction SilentlyContinue |
         Where-Object { Test-Path (Join-Path $_.FullName 'bin\pg_dump.exe') } |
