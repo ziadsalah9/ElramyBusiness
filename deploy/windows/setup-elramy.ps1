@@ -39,8 +39,14 @@ try {
             Rename-Item $PgDataDir ("pgdata.failed-" + (Get-Date -Format 'yyyyMMdd-HHmmss'))
         }
         New-Item -ItemType Directory -Force -Path $PgDataDir | Out-Null
+        # initdb drops its administrator rights (restricted token) before it works, so access
+        # given only to Administrators is not enough: give this user the data folder and the
+        # password file (the secrets folder itself stays Administrators/SYSTEM only).
+        $me = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+        & icacls $PgDataDir /grant "*${me}:(OI)(CI)F" | Out-Null
         $pwFile = Join-Path $SecretsDir 'initdb.tmp'
         Set-Content -Path $pwFile -Value (Read-Secret 'pg-super.secret') -Encoding ASCII -NoNewline
+        & icacls $pwFile /grant "*${me}:R" | Out-Null
         & (Join-Path $pgBin 'initdb.exe') -D $PgDataDir -U postgres --pwfile=$pwFile -E UTF8 --locale=C --auth=scram-sha-256
         $code = $LASTEXITCODE
         Remove-Item $pwFile -Force
