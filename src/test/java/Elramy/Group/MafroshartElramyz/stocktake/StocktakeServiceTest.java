@@ -76,6 +76,7 @@ class StocktakeServiceTest {
         for (ProductVariant v : List.of(red, blue, towel)) {
             when(variants.findById(v.getId())).thenReturn(Optional.of(v));
             when(variants.findByCode(v.getCode())).thenReturn(Optional.of(v));
+            when(variants.findByScanCode(v.getCode())).thenReturn(Optional.of(v));
             when(em.find(ProductVariant.class, v.getId())).thenReturn(v);
         }
     }
@@ -107,7 +108,7 @@ class StocktakeServiceTest {
 
     @Test
     void scanAddsOnePieceAndTheCountingViewIsBlind() {
-        when(variants.findByBarcode("B11")).thenReturn(Optional.of(red));
+        when(variants.findByScanCode("B11")).thenReturn(Optional.of(red));
         assertTrue(service.scan(7L, " B11 ").created());      // by barcode
         Scanned second = service.scan(7L, "C-11");            // by code
 

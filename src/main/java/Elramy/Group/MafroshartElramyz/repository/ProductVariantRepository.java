@@ -19,7 +19,12 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
 
     boolean existsByCode(String code);
 
-    boolean existsByBarcode(String barcode);
+    Optional<ProductVariant> findByLegacyBarcode(String legacyBarcode);
+
+    /** What a scanner or a typed code finds: the code, the barcode, or an old (pre-V23) barcode. */
+    default Optional<ProductVariant> findByScanCode(String code) {
+        return findByCode(code).or(() -> findByBarcode(code)).or(() -> findByLegacyBarcode(code));
+    }
 
 
     // What a stocktake counts: active colours/sizes of active products.

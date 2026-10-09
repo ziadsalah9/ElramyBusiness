@@ -175,7 +175,6 @@ public class ProductServiceImpl implements ProductService {
                     variant = ProductVariant.builder()
                             .product(product)
                             .code(nextVariantCode(product))
-                            .barcode(generateBarcode())
                             .quantity(0)
                             .active(true)
                             .build();
@@ -188,7 +187,7 @@ public class ProductServiceImpl implements ProductService {
             variant.setSize(size);
             variant.setActive(true);
             if (isNew || reactivated) changes.set("إضافة لون/مقاس", label(color, size));
-            variant = variantRepository.save(variant);
+            variant = withShortBarcode(variantRepository.save(variant));
             keep.add(variant.getId());
             applyWantedQuantity(variant, w.quantity(), w.expectedQuantity(), isNew, changes);
         }
@@ -261,20 +260,19 @@ public class ProductServiceImpl implements ProductService {
         if (variant == null) {
             variant = ProductVariant.builder()
                     .product(product).color(c).size(sz)
-                    .code(nextVariantCode(product)).barcode(generateBarcode())
+                    .code(nextVariantCode(product))
                     .quantity(0).active(true).build();
             product.getVariants().add(variant);
         }
         variant.setActive(true);
-        return ProductMapper.toVariantResponse(variantRepository.save(variant));
+        return ProductMapper.toVariantResponse(withShortBarcode(variantRepository.save(variant)));
     }
 
     @Override
     @Transactional(readOnly = true)
     public VariantLookupResponse lookupVariant(String code) {
         String c = code == null ? "" : code.trim();
-        ProductVariant v = variantRepository.findByCode(c)
-                .or(() -> variantRepository.findByBarcode(c))
+        ProductVariant v = variantRepository.findByScanCode(c)
                 .filter(x -> !Boolean.FALSE.equals(x.getActive()))
                 .orElseThrow(() -> new ResourceNotFoundException("لا يوجد منتج بالكود أو الباركود \"" + c + "\""));
         return new VariantLookupResponse(productMapper.toResponse(v.getProduct()), ProductMapper.toVariantResponse(v));
@@ -583,31 +581,18 @@ public class ProductServiceImpl implements ProductService {
     }
 
 
-    private String generateBarcode() {
+    /**
+     * Short barcode for a new colour/size: 100000 + its id (100001, 100002,
+     * ...). Ids never repeat, so neither do these; 6 digits until 99,999
+     * variants. Older 12-digit barcodes are kept as legacy_barcode (V23).
+     */
+    static String shortBarcode(Long variantId) {
+        return String.valueOf(100_000L + variantId);
+    }
 
-        String barcode;
-
-        do {
-
-            long randomNumber =
-                    (long) (
-                            Math.random()
-                                    * 1_000_000_000L
-                    );
-
-
-            barcode =
-                    String.format(
-                            "200%09d",
-                            randomNumber
-                    );
-
-        } while (
-                variantRepository.existsByBarcode(barcode)
-        );
-
-
-        return barcode;
+    private ProductVariant withShortBarcode(ProductVariant variant) {
+        if (variant.getBarcode() == null) variant.setBarcode(shortBarcode(variant.getId()));
+        return variant;
     }
 
 

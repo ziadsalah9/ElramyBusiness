@@ -636,7 +636,7 @@ public class PurchaseInvoiceServiceImpl
      */
     private ProductVariant variantByCode(String code) {
         String c = code.trim();
-        var byVariant = variantRepository.findByCode(c).or(() -> variantRepository.findByBarcode(c));
+        var byVariant = variantRepository.findByScanCode(c);
         if (byVariant.isPresent()) return activeVariant(byVariant.get().getId());
         Product product = productRepository.findByCode(c)
                 .orElseThrow(() -> new ProductNotFoundException(c));

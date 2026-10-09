@@ -37,6 +37,10 @@ public class ProductVariant extends BaseEntity {
     @Column(unique = true)
     private String barcode;
 
+    /** The 12-digit barcode used before V23; still found when scanned (old labels). */
+    @Column(unique = true, length = 30)
+    private String legacyBarcode;
+
     // Changed only through StockService, which locks the row and writes the ledger.
     @Column(nullable = false)
     @Builder.Default

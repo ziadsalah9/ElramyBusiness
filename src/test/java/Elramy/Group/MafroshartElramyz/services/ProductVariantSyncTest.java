@@ -49,7 +49,6 @@ class ProductVariantSyncTest {
 
         when(products.existsByCode(anyString())).thenReturn(false);
         when(variants.existsByCode(anyString())).thenReturn(false);
-        when(variants.existsByBarcode(anyString())).thenReturn(false);
         when(products.save(any())).thenAnswer(inv -> {
             Product p = inv.getArgument(0);
             if (p.getId() == null) p.setId(1L);
@@ -82,6 +81,8 @@ class ProductVariantSyncTest {
         assertEquals(3, p.variants().stream().map(x -> x.code()).distinct().count());
         assertTrue(p.variants().get(0).code().startsWith(saved.getCode() + "-"));
         assertTrue(p.variants().stream().allMatch(x -> x.barcode() != null && x.quantity() == 0));
+        // Short barcodes: 100000 + id, unique like the ids (saved variants here get ids 11, 12, 13).
+        assertEquals(List.of("100011", "100012", "100013"), p.variants().stream().map(x -> x.barcode()).toList());
         assertEquals(0, p.quantity());
     }
 
@@ -196,14 +197,19 @@ class ProductVariantSyncTest {
     }
 
     @Test
-    void lookupFindsByCodeOrBarcode() {
+    void lookupFindsByCodeBarcodeOrAnOldPrintedBarcode() {
         create(v(null, "أحمر", "صغير"));
         ProductVariant red = saved.getVariants().get(0);
-        when(variants.findByCode("SCAN")).thenReturn(Optional.empty());
-        when(variants.findByBarcode("SCAN")).thenReturn(Optional.of(red));
+        when(variants.findByScanCode(anyString())).thenCallRealMethod();   // code -> barcode -> legacy barcode
+        when(variants.findByCode(anyString())).thenReturn(Optional.empty());
+        when(variants.findByBarcode(anyString())).thenReturn(Optional.empty());
+        when(variants.findByLegacyBarcode(anyString())).thenReturn(Optional.empty());
+        when(variants.findByBarcode("100011")).thenReturn(Optional.of(red));
+        when(variants.findByLegacyBarcode("200793466870")).thenReturn(Optional.of(red));
 
-        var found = service.lookupVariant(" SCAN ");
+        var found = service.lookupVariant(" 100011 ");
         assertEquals(red.getId(), found.variant().id());
+        assertEquals(red.getId(), service.lookupVariant("200793466870").variant().id(), "labels printed before V23 still scan");
         assertEquals("لحاف", found.product().name());
         verify(ledger, never()).existsByVariantId(anyLong());
     }

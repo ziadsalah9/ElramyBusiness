@@ -150,8 +150,7 @@ public class StocktakeService {
     public Scanned scan(Long id, String code) {
         Stocktake s = findOpen(id);
         String c = code == null ? "" : code.trim();
-        ProductVariant v = variants.findByCode(c)
-                .or(() -> variants.findByBarcode(c))
+        ProductVariant v = variants.findByScanCode(c)
                 .orElseThrow(() -> new ResourceNotFoundException("لا يوجد منتج بالكود أو الباركود \"" + c + "\""));
         StocktakeLine existing = lineFor(s, v.getId());
         int next = existing == null ? 1 : existing.getCountedQty() + 1;
