@@ -32,6 +32,12 @@ public interface UserService {
 
     UserResponse getCurrentUserResponse();
 
+    /**
+     * The signed-in user changes their own password; the current one must
+     * be right. Older logins stop working. Returns the updated user.
+     */
+    User changeOwnPassword(String currentPassword, String newPassword);
+
 
     // =========================================================
     // GET BY ID

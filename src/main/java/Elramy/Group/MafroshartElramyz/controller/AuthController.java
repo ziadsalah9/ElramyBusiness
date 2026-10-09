@@ -1,8 +1,10 @@
 package Elramy.Group.MafroshartElramyz.controller;
 
+import Elramy.Group.MafroshartElramyz.dto.security.ChangePasswordRequest;
 import Elramy.Group.MafroshartElramyz.dto.security.LoginRequest;
 import Elramy.Group.MafroshartElramyz.dto.security.LoginResponse;
 import Elramy.Group.MafroshartElramyz.dto.user.UserResponse;
+import Elramy.Group.MafroshartElramyz.exception.WrongCurrentPasswordException;
 import Elramy.Group.MafroshartElramyz.models.User;
 import Elramy.Group.MafroshartElramyz.repository.UserRepository;
 import Elramy.Group.MafroshartElramyz.services.JwtService;
@@ -17,6 +19,7 @@ import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -29,6 +32,7 @@ public class AuthController {
     private final UserRepository userRepository;
     private final UserService userService;
     private final LoginAttemptService loginAttempts;
+    private final UserDetailsService userDetailsService;
 
 
     // =========================================================
@@ -92,6 +96,47 @@ public class AuthController {
                 user.getBranch() != null
                         ? user.getBranch().getName()
                         : null
+        );
+    }
+
+
+    // =========================================================
+    // CHANGE OWN PASSWORD
+    // =========================================================
+
+    /**
+     * Any signed-in user. Wrong current passwords count as failed logins,
+     * so this cannot be used to guess passwords. Returns a fresh login
+     * (the old token is revoked by the change).
+     */
+    @PostMapping("/change-password")
+    public LoginResponse changePassword(
+            @Valid @RequestBody ChangePasswordRequest request,
+            HttpServletRequest httpRequest) {
+
+        String username = userService.getCurrentUser().getUsername();
+        String address = httpRequest.getRemoteAddr();
+        loginAttempts.checkAllowed(username, address);
+
+        try {
+            userService.changeOwnPassword(request.currentPassword(), request.newPassword());
+        } catch (WrongCurrentPasswordException ex) {
+            loginAttempts.loginFailed(username, address);
+            throw ex;
+        }
+        loginAttempts.loginSucceeded(username);
+
+        String token = jwtService.generateToken(userDetailsService.loadUserByUsername(username));
+        User user = userRepository.findWithBranchByUsername(username)
+                .orElseThrow(() -> new BadCredentialsException("Invalid username or password"));
+        return new LoginResponse(
+                token,
+                user.getId(),
+                user.getUsername(),
+                user.getFullName(),
+                user.getRole(),
+                user.getBranch() != null ? user.getBranch().getId() : null,
+                user.getBranch() != null ? user.getBranch().getName() : null
         );
     }
 

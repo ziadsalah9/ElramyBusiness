@@ -469,6 +469,26 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    @Override
+    public User changeOwnPassword(String currentPassword, String newPassword) {
+        User user = getCurrentUser();
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new Elramy.Group.MafroshartElramyz.exception.WrongCurrentPasswordException();
+        }
+        if (currentPassword.equals(newPassword)) {
+            throw new IllegalArgumentException("كلمة المرور الجديدة يجب أن تختلف عن الحالية");
+        }
+        validatePassword(newPassword);
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        // Every other login of this account stops working.
+        user.setCredentialsChangedAt(java.time.LocalDateTime.now());
+        User saved = userRepository.save(user);
+        activityLog.record(ActivityEntity.USER, ActivityAction.UPDATE, saved.getId(), userLabel(saved),
+                "تغيير كلمة المرور بواسطة صاحب الحساب", Changes.of().add("كلمة المرور", null, "تم تغييرها"));
+        return saved;
+    }
+
     private long countActiveAdmins() {
         return userRepository.countByRoleAndActiveTrue(Role.ADMIN);
     }
