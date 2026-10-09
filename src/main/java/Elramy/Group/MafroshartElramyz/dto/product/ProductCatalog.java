@@ -1,6 +1,5 @@
 package Elramy.Group.MafroshartElramyz.dto.product;
 
-import Elramy.Group.MafroshartElramyz.enums.ProductType;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -81,26 +80,8 @@ public final class ProductCatalog {
         return size;
     }
 
-    /** Label for OTHER, matching the frontend. */
-    public static final String OTHER_LABEL = "أخرى";
+    // Product types live in the product_types table (V24, ItemTypeService).
 
-    /** Values offered in the template's type dropdown. */
-    public static List<String> typeOptions() {
-        return java.util.Arrays.stream(ProductType.values())
-                .map(t -> t == ProductType.OTHER ? OTHER_LABEL : t.name().trim())
-                .toList();
-    }
-
-    /** Resolves a type from its enum name or UI label. */
-    public static Optional<ProductType> resolveType(String raw) {
-        String v = normalize(raw);
-        if (v.isEmpty()) return Optional.empty();
-        if (v.equals(OTHER_LABEL) || v.equalsIgnoreCase("OTHER")) return Optional.of(ProductType.OTHER);
-        for (ProductType t : ProductType.values()) {
-            if (normalize(t.name()).equals(v)) return Optional.of(t);
-        }
-        return Optional.empty();
-    }
 
     /** Resolves a color/size from its stored value or its UI label. */
     public static Optional<String> resolve(Map<String, String> catalog, String raw) {

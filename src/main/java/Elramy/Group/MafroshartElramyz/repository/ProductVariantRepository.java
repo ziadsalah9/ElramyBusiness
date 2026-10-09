@@ -1,7 +1,6 @@
 package Elramy.Group.MafroshartElramyz.repository;
 
 import Elramy.Group.MafroshartElramyz.models.ProductVariant;
-import Elramy.Group.MafroshartElramyz.enums.ProductType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -33,5 +32,5 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
 
     @Query("SELECT v FROM ProductVariant v JOIN FETCH v.product p WHERE v.active = true AND p.active = true"
             + " AND p.itemType IN :types ORDER BY p.name, v.id")
-    List<ProductVariant> findCountableByTypes(@Param("types") Collection<ProductType> types);
+    List<ProductVariant> findCountableByTypes(@Param("types") Collection<String> types);
 }

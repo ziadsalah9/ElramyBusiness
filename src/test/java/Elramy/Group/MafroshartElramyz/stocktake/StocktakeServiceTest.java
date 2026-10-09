@@ -1,7 +1,6 @@
 package Elramy.Group.MafroshartElramyz.stocktake;
 
 import Elramy.Group.MafroshartElramyz.activity.ActivityLogService;
-import Elramy.Group.MafroshartElramyz.enums.ProductType;
 import Elramy.Group.MafroshartElramyz.enums.TransactionType;
 import Elramy.Group.MafroshartElramyz.exception.ConflictException;
 import Elramy.Group.MafroshartElramyz.models.Product;
@@ -61,15 +60,15 @@ class StocktakeServiceTest {
         when(users.getCurrentUser()).thenReturn(admin);
         service = new StocktakeService(stocktakes, variants, stock, users, mock(ActivityLogService.class), em);
 
-        Product quilt = Product.builder().id(1L).name("لحاف").itemType(ProductType.لحاف)
+        Product quilt = Product.builder().id(1L).name("لحاف").itemType("لحاف")
                 .purchasePrice(new BigDecimal("100")).sellingPrice(new BigDecimal("150")).active(true).build();
-        Product towels = Product.builder().id(2L).name("فوطة").itemType(ProductType.فوط).active(true).build();
+        Product towels = Product.builder().id(2L).name("فوطة").itemType("فوط").active(true).build();
         red = variant(11L, quilt, "أحمر", 10);
         blue = variant(12L, quilt, "أزرق", 5);
         towel = variant(21L, towels, "أبيض", 3);
 
         open = Stocktake.builder().id(7L).code("STK-1").title("جرد اللحاف").status(StocktakeStatus.OPEN).build();
-        open.setScope(List.of(ProductType.لحاف));
+        open.setScope(List.of("لحاف"));
         when(stocktakes.findById(7L)).thenReturn(Optional.of(open));
         when(stocktakes.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(variants.findCountableByTypes(any())).thenReturn(List.of(red, blue));

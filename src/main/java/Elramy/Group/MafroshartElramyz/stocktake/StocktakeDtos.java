@@ -1,6 +1,5 @@
 package Elramy.Group.MafroshartElramyz.stocktake;
 
-import Elramy.Group.MafroshartElramyz.enums.ProductType;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -22,7 +21,7 @@ public final class StocktakeDtos {
     /** Empty or null {@code types} = the whole store. */
     public record CreateRequest(
             @NotBlank(message = "عنوان الجرد مطلوب") @Size(max = 200, message = "العنوان طويل جداً") String title,
-            List<ProductType> types,
+            List<String> types,
             @Size(max = 500, message = "الملاحظات طويلة جداً") String notes) {
     }
 
@@ -39,7 +38,7 @@ public final class StocktakeDtos {
     }
 
     public record Summary(
-            Long id, String code, String title, List<ProductType> types, StocktakeStatus status, String notes,
+            Long id, String code, String title, List<String> types, StocktakeStatus status, String notes,
             LocalDateTime createdAt, String createdByName, LocalDateTime approvedAt, String approvedByName,
             int countedLines, int totalInScope,
             BigDecimal shortageCost, BigDecimal surplusCost, BigDecimal shortageSell, BigDecimal surplusSell) {
@@ -47,7 +46,7 @@ public final class StocktakeDtos {
 
     /** A colour/size as the counter sees it: no system quantity (blind count). */
     public record CountLine(
-            Long variantId, Long productId, String productName, ProductType itemType, String variantCode, String barcode,
+            Long variantId, Long productId, String productName, String itemType, String variantCode, String barcode,
             String color, String size, String label, int countedQty, LocalDateTime countedAt) {
     }
 
@@ -55,7 +54,7 @@ public final class StocktakeDtos {
     }
 
     public record ReviewLine(
-            Long variantId, Long productId, String productName, ProductType itemType, String variantCode,
+            Long variantId, Long productId, String productName, String itemType, String variantCode,
             String label, int systemQty, int countedQty, int variance,
             BigDecimal unitCost, BigDecimal unitPrice, BigDecimal costValue, BigDecimal sellValue,
             StocktakeReason reason, String note, Integer appliedVariance, boolean clamped) {

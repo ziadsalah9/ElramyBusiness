@@ -1,6 +1,5 @@
 package Elramy.Group.MafroshartElramyz.models;
 
-import Elramy.Group.MafroshartElramyz.enums.ProductType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -35,8 +34,9 @@ public class Product extends BaseEntity {
 
     private String model;
 
-    @Enumerated(EnumType.STRING)
-    private ProductType itemType;
+    /** Name of a product type (product_types, V24). */
+    @Column(name = "item_type")
+    private String itemType;
 
     // Current price, shared by every variant. All null until the product is
     // priced; a product without a selling price cannot be sold.

@@ -42,6 +42,7 @@ public class ProductServiceImpl implements ProductService {
     private final StockService stockService;
     private final ProductMapper productMapper;
     private final ActivityLogService activityLog;
+    private final Elramy.Group.MafroshartElramyz.producttype.ItemTypeService itemTypes;
 
     /** Ledger reference for stock typed in the product form. */
     static final String REFERENCE_PRODUCT_FORM = "PRODUCT_FORM";
@@ -58,7 +59,7 @@ public class ProductServiceImpl implements ProductService {
                 .code(generateProductCode())
                 .name(request.name())
                 .model(request.model())
-                .itemType(request.itemType())
+                .itemType(itemTypes.requireUsable(request.itemType(), null))
                 .minimumQuantity(request.minimumQuantity() != null ? request.minimumQuantity() : 0)
                 .active(true)
                 .build();
@@ -98,9 +99,10 @@ public class ProductServiceImpl implements ProductService {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException(id));
 
+        String itemType = itemTypes.requireUsable(request.itemType(), product.getItemType());
         Changes changes = Changes.of()
                 .add("الاسم", product.getName(), request.name())
-                .add("النوع", product.getItemType(), request.itemType())
+                .add("النوع", product.getItemType(), itemType)
                 .add("الموديل", product.getModel(), request.model());
         if (request.minimumQuantity() != null) {
             changes.add("الحد الأدنى", product.getMinimumQuantity(), request.minimumQuantity());
@@ -108,7 +110,7 @@ public class ProductServiceImpl implements ProductService {
 
         product.setName(request.name());
         product.setModel(request.model());
-        product.setItemType(request.itemType());
+        product.setItemType(itemType);
 
         // A partial update that omits the limit must not wipe the existing one.
         if (request.minimumQuantity() != null) {

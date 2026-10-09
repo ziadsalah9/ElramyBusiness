@@ -4,7 +4,6 @@ import Elramy.Group.MafroshartElramyz.activity.ActivityAction;
 import Elramy.Group.MafroshartElramyz.activity.ActivityEntity;
 import Elramy.Group.MafroshartElramyz.activity.ActivityLogService;
 import Elramy.Group.MafroshartElramyz.activity.Changes;
-import Elramy.Group.MafroshartElramyz.enums.ProductType;
 import Elramy.Group.MafroshartElramyz.enums.TransactionType;
 import Elramy.Group.MafroshartElramyz.exception.ConflictException;
 import Elramy.Group.MafroshartElramyz.exception.ResourceNotFoundException;
@@ -196,7 +195,7 @@ public class StocktakeService {
         if (!Boolean.TRUE.equals(v.getActive()) || !Boolean.TRUE.equals(p.getActive())) {
             throw new IllegalArgumentException(p.getName() + " (" + v.label() + ") غير نشط ولا يدخل في الجرد.");
         }
-        List<ProductType> scope = s.scope();
+        List<String> scope = s.scope();
         if (!scope.isEmpty() && !scope.contains(p.getItemType())) {
             throw new IllegalArgumentException(p.getName() + " من نوع «" + p.getItemType() + "» وهو خارج نطاق هذا الجرد.");
         }
@@ -417,7 +416,7 @@ public class StocktakeService {
     }
 
     private List<ProductVariant> countable(Stocktake s) {
-        List<ProductType> scope = s.scope();
+        List<String> scope = s.scope();
         return scope.isEmpty() ? variants.findAllCountable() : variants.findCountableByTypes(scope);
     }
 
@@ -509,8 +508,8 @@ public class StocktakeService {
     }
 
     private static String scopeLabel(Stocktake s) {
-        List<ProductType> scope = s.scope();
-        return scope.isEmpty() ? "كل المنتجات" : scope.stream().map(Enum::name).collect(Collectors.joining("، "));
+        List<String> scope = s.scope();
+        return scope.isEmpty() ? "كل المنتجات" : scope.stream().map(String::valueOf).collect(Collectors.joining("، "));
     }
 
     private static String name(User u) {

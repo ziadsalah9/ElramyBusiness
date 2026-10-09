@@ -1,6 +1,5 @@
 package Elramy.Group.MafroshartElramyz.dto.product;
 
-import Elramy.Group.MafroshartElramyz.enums.ProductType;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -18,7 +17,8 @@ public record UpdateProductRequest(
         String model,
 
         @NotNull
-        ProductType itemType,
+        @jakarta.validation.constraints.NotBlank(message = "اختر نوع المنتج")
+        String itemType,
 
         @Min(value = 0, message = "Minimum quantity cannot be negative")
         Integer minimumQuantity,
@@ -41,7 +41,7 @@ public record UpdateProductRequest(
 
 ) {
 
-    public UpdateProductRequest(String name, String model, ProductType itemType, Integer minimumQuantity, List<ProductVariantRequest> variants) {
+    public UpdateProductRequest(String name, String model, String itemType, Integer minimumQuantity, List<ProductVariantRequest> variants) {
         this(name, model, itemType, minimumQuantity, variants, null);
     }
 }

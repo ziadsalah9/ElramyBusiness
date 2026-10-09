@@ -1,6 +1,5 @@
 package Elramy.Group.MafroshartElramyz.services;
 
-import Elramy.Group.MafroshartElramyz.enums.ProductType;
 import Elramy.Group.MafroshartElramyz.enums.TransactionType;
 import Elramy.Group.MafroshartElramyz.dto.product.CreateProductPriceRequest;
 import Elramy.Group.MafroshartElramyz.dto.product.CreateProductRequest;
@@ -101,7 +100,7 @@ class ProductImportServiceImplTest {
             return response(inv.getArgument(0));
         });
         when(productService.getById(anyLong())).thenAnswer(inv -> response(inv.getArgument(0)));
-        service = new ProductImportServiceImpl(productService, productRepository, stockService, draftRepository, mock(UserService.class), mock(Elramy.Group.MafroshartElramyz.activity.ActivityLogService.class));
+        service = new ProductImportServiceImpl(productService, productRepository, stockService, draftRepository, mock(UserService.class), mock(Elramy.Group.MafroshartElramyz.activity.ActivityLogService.class), Elramy.Group.MafroshartElramyz.producttype.TestItemTypes.mock());
     }
 
     private ProductVariantResponse variant(String color, String size) {
@@ -186,7 +185,7 @@ class ProductImportServiceImplTest {
 
     @Test
     void newColourOfAnExistingProductIsAddedButAnExistingColourIsSkipped() throws Exception {
-        Product existing = Product.builder().id(7L).code("PRD-OLD").name("لحاف قطن").itemType(ProductType.لحاف).active(true).build();
+        Product existing = Product.builder().id(7L).code("PRD-OLD").name("لحاف قطن").itemType("لحاف").active(true).build();
         existing.getVariants().add(ProductVariant.builder().id(70L).product(existing).color("أبيض").size("كينج").code("PRD-OLD-1").quantity(5).build());
         when(productRepository.findAll()).thenReturn(List.of(existing));
         names.put(7L, "لحاف قطن");
@@ -236,7 +235,7 @@ class ProductImportServiceImplTest {
         verify(productService, times(3)).create(products.capture());
         assertEquals("طقم 4", products.getAllValues().get(0).variants().get(0).size());
         assertEquals("متعدد", products.getAllValues().get(1).variants().get(0).color());
-        assertEquals(ProductType.OTHER, products.getAllValues().get(1).itemType());
+        assertEquals("أخرى", products.getAllValues().get(1).itemType());
         assertNull(products.getAllValues().get(2).variants().get(0).color());
         assertNull(products.getAllValues().get(2).variants().get(0).size());
 
@@ -287,7 +286,7 @@ class ProductImportServiceImplTest {
 
     @Test
     void rowMatchingAnExistingDraftIsSkipped() throws Exception {
-        ProductDraft existingDraft = ProductDraft.builder().id(9L).name("بطانية").itemType(ProductType.بطانيه).build();
+        ProductDraft existingDraft = ProductDraft.builder().id(9L).name("بطانية").itemType("بطانيه").build();
         existingDraft.addVariant("بيج", "كبير", null, 2);
         when(draftRepository.findAll()).thenReturn(List.of(existingDraft));
         ProductImportResult result = service.importFile(xlsx(sheet(

@@ -23,7 +23,7 @@ public class ProductMapper {
                 product.getCode(),
                 product.getName(),
                 product.getModel(),
-                product.getItemType() != null ? product.getItemType().name() : null,
+                product.getItemType(),
                 toPriceResponse(product),
                 product.getMinimumQuantity(),
                 product.getActive(),

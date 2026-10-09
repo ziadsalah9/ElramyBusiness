@@ -1,6 +1,5 @@
 package Elramy.Group.MafroshartElramyz.stocktake;
 
-import Elramy.Group.MafroshartElramyz.enums.ProductType;
 import Elramy.Group.MafroshartElramyz.models.BaseEntity;
 import Elramy.Group.MafroshartElramyz.models.User;
 import jakarta.persistence.*;
@@ -69,15 +68,15 @@ public class Stocktake extends BaseEntity {
     private List<StocktakeLine> lines = new ArrayList<>();
 
     /** The product types counted; empty = every product. */
-    public List<ProductType> scope() {
+    public List<String> scope() {
         if (scopeTypes == null || scopeTypes.isBlank()) return List.of();
         return Arrays.stream(scopeTypes.split(",")).map(String::trim).filter(s -> !s.isEmpty())
-                .map(ProductType::valueOf).toList();
+                .toList();
     }
 
-    public void setScope(List<ProductType> types) {
+    public void setScope(List<String> types) {
         this.scopeTypes = types == null || types.isEmpty() ? null
-                : types.stream().distinct().map(Enum::name).collect(Collectors.joining(","));
+                : types.stream().distinct().map(String::trim).filter(t -> !t.isEmpty()).collect(Collectors.joining(","));
     }
 
     public boolean isOpen() {

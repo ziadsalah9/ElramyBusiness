@@ -1,6 +1,5 @@
 package Elramy.Group.MafroshartElramyz.dto.product;
 
-import Elramy.Group.MafroshartElramyz.enums.ProductType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -19,7 +18,8 @@ public record CreateProductRequest(
         String model,
 
         @NotNull(message = "Product type is required")
-        ProductType itemType,
+        @jakarta.validation.constraints.NotBlank(message = "اختر نوع المنتج")
+        String itemType,
 
         @Min(value = 0, message = "Minimum quantity cannot be negative")
         @Schema(defaultValue = "0", description = "Low-stock alert threshold for the product total", example = "0")
@@ -38,7 +38,7 @@ public record CreateProductRequest(
 
 ) {
 
-    public CreateProductRequest(String name, String model, ProductType itemType, Integer minimumQuantity, List<ProductVariantRequest> variants) {
+    public CreateProductRequest(String name, String model, String itemType, Integer minimumQuantity, List<ProductVariantRequest> variants) {
         this(name, model, itemType, minimumQuantity, variants, null);
     }
 }

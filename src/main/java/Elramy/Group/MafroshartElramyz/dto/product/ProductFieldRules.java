@@ -1,6 +1,5 @@
 package Elramy.Group.MafroshartElramyz.dto.product;
 
-import Elramy.Group.MafroshartElramyz.enums.ProductType;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -39,12 +38,12 @@ public final class ProductFieldRules {
      * Required fields that are still empty. Empty list = complete.
      * Colour and size are optional (V11): a variant may have neither.
      */
-    public static List<String> missingFields(String name, ProductType type,
+    public static List<String> missingFields(String name, String type,
                                              BigDecimal purchasePrice, BigDecimal profitPercentage,
                                              BigDecimal sellingPrice, Integer quantity) {
         List<String> missing = new ArrayList<>();
         if (name == null || name.isBlank()) missing.add(NAME);
-        if (type == null) missing.add(TYPE);
+        if (type == null || type.isBlank()) missing.add(TYPE);
         if (!hasPrice(purchasePrice, profitPercentage, sellingPrice)) missing.add(PRICE);
         if (quantity == null) missing.add(QUANTITY);
         return missing;
@@ -68,10 +67,10 @@ public final class ProductFieldRules {
     }
 
     /** Product identity: same name, type and model = same product. */
-    public static String productKey(String name, ProductType type, String model) {
+    public static String productKey(String name, String type, String model) {
         return String.join("|",
                 ProductCatalog.normalize(name).toLowerCase(Locale.ROOT),
-                type == null ? "" : type.name(),
+                type == null ? "" : type.trim(),
                 ProductCatalog.normalize(model).toLowerCase(Locale.ROOT));
     }
 
@@ -122,7 +121,7 @@ public final class ProductFieldRules {
     }
 
     /** True when name and type are known, so the product key is meaningful. */
-    public static boolean identifiable(String name, ProductType type) {
+    public static boolean identifiable(String name, String type) {
         return name != null && !name.isBlank() && type != null;
     }
 }

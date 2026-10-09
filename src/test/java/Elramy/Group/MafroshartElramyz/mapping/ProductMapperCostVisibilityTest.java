@@ -1,6 +1,5 @@
 package Elramy.Group.MafroshartElramyz.mapping;
 
-import Elramy.Group.MafroshartElramyz.enums.ProductType;
 import Elramy.Group.MafroshartElramyz.dto.product.ProductPriceResponse;
 import Elramy.Group.MafroshartElramyz.models.Product;
 import org.junit.jupiter.api.AfterEach;
@@ -23,7 +22,7 @@ class ProductMapperCostVisibilityTest {
 
     @BeforeEach
     void setUp() {
-        product = Product.builder().id(1L).code("PRD-1").name("لحاف").itemType(ProductType.لحاف)
+        product = Product.builder().id(1L).code("PRD-1").name("لحاف").itemType("لحاف")
                 .purchasePrice(new BigDecimal("150.00")).profitPercentage(new BigDecimal("30.00"))
                 .sellingPrice(new BigDecimal("195.00")).active(true).build();
     }

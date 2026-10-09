@@ -1,6 +1,5 @@
 package Elramy.Group.MafroshartElramyz.services;
 
-import Elramy.Group.MafroshartElramyz.enums.ProductType;
 import Elramy.Group.MafroshartElramyz.enums.TransactionType;
 import Elramy.Group.MafroshartElramyz.dto.product.CreateProductPriceRequest;
 import Elramy.Group.MafroshartElramyz.dto.product.CreateProductRequest;
@@ -51,9 +50,9 @@ class ProductDraftServiceImplTest {
         products = mock(ProductRepository.class);
         productService = mock(ProductService.class);
         stockService = mock(StockService.class);
-        service = new ProductDraftServiceImpl(drafts, products, productService, stockService, mock(Elramy.Group.MafroshartElramyz.activity.ActivityLogService.class));
+        service = new ProductDraftServiceImpl(drafts, products, productService, stockService, mock(Elramy.Group.MafroshartElramyz.activity.ActivityLogService.class), Elramy.Group.MafroshartElramyz.producttype.TestItemTypes.mock());
 
-        draft = ProductDraft.builder().id(7L).name("لحاف").itemType(ProductType.لحاف)
+        draft = ProductDraft.builder().id(7L).name("لحاف").itemType("لحاف")
                 .purchasePrice(new BigDecimal("100.00")).profitPercentage(new BigDecimal("20.00")).sourceRow(5).build();
         draft.addVariant("أحمر", "صغير", 4, 5);
         draft.addVariant("أصفر", "وسط", 3, 6);
@@ -93,7 +92,7 @@ class ProductDraftServiceImplTest {
 
     @Test
     void completingAddsTheColoursSizesToTheMatchingExistingProduct() {
-        Product existing = Product.builder().id(3L).code("PRD-3").name(" لحاف ").itemType(ProductType.لحاف)
+        Product existing = Product.builder().id(3L).code("PRD-3").name(" لحاف ").itemType("لحاف")
                 .sellingPrice(new BigDecimal("130")).active(true).build();
         existing.getVariants().add(ProductVariant.builder().id(30L).product(existing).color("أبيض").code("PRD-3-1").build());
         when(products.findAll()).thenReturn(List.of(existing));
@@ -110,7 +109,7 @@ class ProductDraftServiceImplTest {
 
     @Test
     void colourSizeAlreadyOnTheProductIsRejected() {
-        Product existing = Product.builder().id(3L).code("PRD-3").name("لحاف").itemType(ProductType.لحاف).active(true).build();
+        Product existing = Product.builder().id(3L).code("PRD-3").name("لحاف").itemType("لحاف").active(true).build();
         existing.getVariants().add(ProductVariant.builder().id(30L).product(existing).color("أصفر").size("وسط").code("PRD-3-1").build());
         when(products.findAll()).thenReturn(List.of(existing));
 

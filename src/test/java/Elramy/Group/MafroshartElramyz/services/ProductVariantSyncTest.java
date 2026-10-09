@@ -1,6 +1,5 @@
 package Elramy.Group.MafroshartElramyz.services;
 
-import Elramy.Group.MafroshartElramyz.enums.ProductType;
 import Elramy.Group.MafroshartElramyz.enums.TransactionType;
 import Elramy.Group.MafroshartElramyz.dto.product.CreateProductRequest;
 import Elramy.Group.MafroshartElramyz.dto.product.ProductResponse;
@@ -45,7 +44,7 @@ class ProductVariantSyncTest {
         variants = mock(ProductVariantRepository.class);
         ledger = mock(StockTransactionRepository.class);
         stock = mock(StockService.class);
-        service = new ProductServiceImpl(products, variants, ledger, stock, new ProductMapper(), mock(Elramy.Group.MafroshartElramyz.activity.ActivityLogService.class));
+        service = new ProductServiceImpl(products, variants, ledger, stock, new ProductMapper(), mock(Elramy.Group.MafroshartElramyz.activity.ActivityLogService.class), Elramy.Group.MafroshartElramyz.producttype.TestItemTypes.mock());
 
         when(products.existsByCode(anyString())).thenReturn(false);
         when(variants.existsByCode(anyString())).thenReturn(false);
@@ -69,7 +68,7 @@ class ProductVariantSyncTest {
     }
 
     private ProductResponse create(ProductVariantRequest... vs) {
-        return service.create(new CreateProductRequest("لحاف", null, ProductType.لحاف, 5, Arrays.asList(vs)));
+        return service.create(new CreateProductRequest("لحاف", null, "لحاف", 5, Arrays.asList(vs)));
     }
 
     @Test
@@ -88,7 +87,7 @@ class ProductVariantSyncTest {
 
     @Test
     void noColoursOrSizesGivesOneDefaultVariant() {
-        ProductResponse p = service.create(new CreateProductRequest("فوطة", null, ProductType.فوط, 0, null));
+        ProductResponse p = service.create(new CreateProductRequest("فوطة", null, "فوط", 0, null));
         assertEquals(1, p.variants().size());
         assertEquals("بدون لون أو مقاس", p.variants().get(0).label());
     }
@@ -104,7 +103,7 @@ class ProductVariantSyncTest {
 
     @Test
     void theRestOfTheTotalBecomesNoColourOrSize() {
-        ProductResponse p = service.create(new CreateProductRequest("لحاف", null, ProductType.لحاف, 5,
+        ProductResponse p = service.create(new CreateProductRequest("لحاف", null, "لحاف", 5,
                 List.of(new ProductVariantRequest(null, "أحمر", "صغير", 4), new ProductVariantRequest(null, "أصفر", null, 3)), 10));
 
         assertEquals(List.of("أحمر / صغير", "أصفر", "بدون لون أو مقاس"), p.variants().stream().map(x -> x.label()).toList());
@@ -114,7 +113,7 @@ class ProductVariantSyncTest {
     @Test
     void coloursSizesAddingUpToMoreThanTheTotalAreRejected() {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> service.create(new CreateProductRequest(
-                "لحاف", null, ProductType.لحاف, 5, List.of(new ProductVariantRequest(null, "أحمر", null, 8)), 5)));
+                "لحاف", null, "لحاف", 5, List.of(new ProductVariantRequest(null, "أحمر", null, 8)), 5)));
         assertTrue(ex.getMessage().contains("أكبر من"));
     }
 
@@ -127,7 +126,7 @@ class ProductVariantSyncTest {
         yellow.setQuantity(2);   // the form showed 4: one was sold meanwhile
 
         assertThrows(Elramy.Group.MafroshartElramyz.exception.ConflictException.class, () ->
-                service.update(1L, new UpdateProductRequest("لحاف", null, ProductType.لحاف, 5, List.of(
+                service.update(1L, new UpdateProductRequest("لحاف", null, "لحاف", 5, List.of(
                         new ProductVariantRequest(red.getId(), "أحمر", null, 6, 5),
                         new ProductVariantRequest(yellow.getId(), "أصفر", null, null, 3)), 9)));
     }
@@ -156,7 +155,7 @@ class ProductVariantSyncTest {
         when(ledger.existsByVariantId(yellow.getId())).thenReturn(true);   // sold before -> keep history
         when(ledger.existsByVariantId(white.getId())).thenReturn(false);   // never used -> delete
 
-        ProductResponse p = service.update(1L, new UpdateProductRequest("لحاف", null, ProductType.لحاف, 5,
+        ProductResponse p = service.update(1L, new UpdateProductRequest("لحاف", null, "لحاف", 5,
                 List.of(v(red.getId(), "أحمر", "صغير"), v(null, "أسود", "مزدوج"))));
 
         assertEquals(List.of("أحمر / صغير", "أسود / مزدوج"), p.variants().stream().map(x -> x.label()).toList());
@@ -172,7 +171,7 @@ class ProductVariantSyncTest {
         saved.getVariants().get(1).setQuantity(3);
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> service.update(1L,
-                new UpdateProductRequest("لحاف", null, ProductType.لحاف, 5, List.of(v(red.getId(), "أحمر", "صغير")))));
+                new UpdateProductRequest("لحاف", null, "لحاف", 5, List.of(v(red.getId(), "أحمر", "صغير")))));
         assertTrue(ex.getMessage().contains("مخزون"));
     }
 
@@ -180,7 +179,7 @@ class ProductVariantSyncTest {
     void productMustKeepAtLeastOneVariant() {
         create(v(null, "أحمر", "صغير"));
         assertThrows(IllegalArgumentException.class, () -> service.update(1L,
-                new UpdateProductRequest("لحاف", null, ProductType.لحاف, 5, List.of())));
+                new UpdateProductRequest("لحاف", null, "لحاف", 5, List.of())));
     }
 
     @Test
@@ -218,7 +217,7 @@ class ProductVariantSyncTest {
 
     @Test
     void quantityForANewColourSizeIsRecordedAsOpeningStock() {
-        service.create(new CreateProductRequest("لحاف", null, ProductType.لحاف, 5, List.of(
+        service.create(new CreateProductRequest("لحاف", null, "لحاف", 5, List.of(
                 new ProductVariantRequest(null, null, "كبير", 3),
                 new ProductVariantRequest(null, "أحمر", "صغير", 4),
                 new ProductVariantRequest(null, "أصفر", "وسط", 0))));   // 0 = nothing to record
@@ -240,7 +239,7 @@ class ProductVariantSyncTest {
         yellow.setQuantity(5);
         white.setQuantity(2);
 
-        service.update(1L, new UpdateProductRequest("لحاف", null, ProductType.لحاف, 5, List.of(
+        service.update(1L, new UpdateProductRequest("لحاف", null, "لحاف", 5, List.of(
                 new ProductVariantRequest(red.getId(), "أحمر", "صغير", 10),      // +6
                 new ProductVariantRequest(yellow.getId(), "أصفر", "وسط", 2),     // -3
                 new ProductVariantRequest(white.getId(), "أبيض", "كبير", null)))); // unchanged
@@ -253,7 +252,7 @@ class ProductVariantSyncTest {
 
     @Test
     void negativeQuantityIsRejected() {
-        assertThrows(IllegalArgumentException.class, () -> service.create(new CreateProductRequest("لحاف", null, ProductType.لحاف, 0,
+        assertThrows(IllegalArgumentException.class, () -> service.create(new CreateProductRequest("لحاف", null, "لحاف", 0,
                 List.of(new ProductVariantRequest(null, "أحمر", null, -1)))));
         verifyNoInteractions(stock);
     }
@@ -265,12 +264,12 @@ class ProductVariantSyncTest {
         red.setQuantity(7);   // the form opened at 10; a sale of 3 happened since
 
         assertThrows(Elramy.Group.MafroshartElramyz.exception.ConflictException.class, () ->
-                service.update(1L, new UpdateProductRequest("لحاف", null, ProductType.لحاف, 5,
+                service.update(1L, new UpdateProductRequest("لحاف", null, "لحاف", 5,
                         List.of(new ProductVariantRequest(red.getId(), "أحمر", "صغير", 12, 10)))));
         verify(stock, never()).increaseStock(anyLong(), anyInt(), any(), any(), any(), any(), any());
 
         // Same edit from up-to-date stock goes through as +5.
-        service.update(1L, new UpdateProductRequest("لحاف", null, ProductType.لحاف, 5,
+        service.update(1L, new UpdateProductRequest("لحاف", null, "لحاف", 5,
                 List.of(new ProductVariantRequest(red.getId(), "أحمر", "صغير", 12, 7))));
         verify(stock).increaseStock(eq(red.getId()), eq(5), any(), any(), any(), any(), any());
     }
@@ -281,7 +280,7 @@ class ProductVariantSyncTest {
         ProductVariant red = saved.getVariants().get(0);
         red.setQuantity(7);
 
-        service.update(1L, new UpdateProductRequest("لحاف تعديل", null, ProductType.لحاف, 5,
+        service.update(1L, new UpdateProductRequest("لحاف تعديل", null, "لحاف", 5,
                 List.of(new ProductVariantRequest(red.getId(), "أحمر", "صغير", null, null))));
         verifyNoInteractions(stock);
     }

@@ -1,6 +1,5 @@
 package Elramy.Group.MafroshartElramyz.services;
 
-import Elramy.Group.MafroshartElramyz.enums.ProductType;
 import Elramy.Group.MafroshartElramyz.dto.product.CreateProductPriceRequest;
 import Elramy.Group.MafroshartElramyz.dto.product.ProductResponse;
 import Elramy.Group.MafroshartElramyz.exception.PriceNotFoundException;
@@ -30,8 +29,8 @@ class ProductServiceImplPriceTest {
     @BeforeEach
     void setUp() {
         productRepository = mock(ProductRepository.class);
-        service = new ProductServiceImpl(productRepository, mock(ProductVariantRepository.class), mock(StockTransactionRepository.class), mock(StockService.class), new ProductMapper(), mock(Elramy.Group.MafroshartElramyz.activity.ActivityLogService.class));
-        product = Product.builder().id(7L).code("PRD-7").name("لحاف").itemType(ProductType.لحاف)
+        service = new ProductServiceImpl(productRepository, mock(ProductVariantRepository.class), mock(StockTransactionRepository.class), mock(StockService.class), new ProductMapper(), mock(Elramy.Group.MafroshartElramyz.activity.ActivityLogService.class), Elramy.Group.MafroshartElramyz.producttype.TestItemTypes.mock());
+        product = Product.builder().id(7L).code("PRD-7").name("لحاف").itemType("لحاف")
                 .active(true).build();
         when(productRepository.findById(7L)).thenReturn(Optional.of(product));
     }

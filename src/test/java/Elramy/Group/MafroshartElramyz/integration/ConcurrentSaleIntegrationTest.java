@@ -1,6 +1,5 @@
 package Elramy.Group.MafroshartElramyz.integration;
 
-import Elramy.Group.MafroshartElramyz.enums.ProductType;
 import Elramy.Group.MafroshartElramyz.enums.TransactionType;
 import Elramy.Group.MafroshartElramyz.models.Product;
 import Elramy.Group.MafroshartElramyz.models.ProductVariant;
@@ -47,7 +46,7 @@ class ConcurrentSaleIntegrationTest {
         String admin = users.findAll().stream().filter(u -> u.getRole().name().equals("ADMIN")).findFirst().orElseThrow().getUsername();
         String tag = UUID.randomUUID().toString().substring(0, 8);
         Long variantId = tx.execute(s -> {
-            Product p = products.save(Product.builder().code("IT-" + tag).name("IT " + tag).itemType(ProductType.لحاف)
+            Product p = products.save(Product.builder().code("IT-" + tag).name("IT " + tag).itemType("لحاف")
                     .minimumQuantity(0).sellingPrice(new BigDecimal("10")).active(true).build());
             return variants.save(ProductVariant.builder().product(p).code("IT-" + tag + "-1").barcode("IT" + tag)
                     .quantity(10).active(true).build()).getId();

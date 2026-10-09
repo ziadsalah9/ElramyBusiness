@@ -4,7 +4,6 @@ import Elramy.Group.MafroshartElramyz.activity.ActivityAction;
 import Elramy.Group.MafroshartElramyz.activity.ActivityEntity;
 import Elramy.Group.MafroshartElramyz.activity.ActivityLogService;
 import Elramy.Group.MafroshartElramyz.activity.Changes;
-import Elramy.Group.MafroshartElramyz.enums.ProductType;
 import Elramy.Group.MafroshartElramyz.enums.TransactionType;
 import Elramy.Group.MafroshartElramyz.dto.product.CreateProductPriceRequest;
 import Elramy.Group.MafroshartElramyz.dto.product.CreateProductRequest;
@@ -56,6 +55,7 @@ public class ProductImportServiceImpl implements ProductImportService {
     private final ProductDraftRepository draftRepository;
     private final UserService userService;
     private final ActivityLogService activityLog;
+    private final Elramy.Group.MafroshartElramyz.producttype.ItemTypeService itemTypes;
 
     /** Ledger reference for opening stock entered through the import. */
     static final String REFERENCE_PRODUCT_IMPORT = "PRODUCT_IMPORT";
@@ -140,7 +140,7 @@ public class ProductImportServiceImpl implements ProductImportService {
             data.setDefaultColumnStyle(Col.MODEL.ordinal(), text);
 
             // --- Dropdown source lists (hidden sheet + named ranges) ---
-            writeList(wb, lists, 0, "ProductTypes", ProductCatalog.typeOptions());
+            writeList(wb, lists, 0, "ProductTypes", itemTypes.activeNames());
             writeList(wb, lists, 1, "ProductColors", new ArrayList<>(ProductCatalog.COLORS.keySet()));
             wb.setSheetHidden(wb.getSheetIndex(lists), true);
 
@@ -289,7 +289,7 @@ public class ProductImportServiceImpl implements ProductImportService {
     private static final class ParsedRow {
         int rowNumber;
         String name;
-        ProductType type;
+        String type;
         String color;
         String size;
         String model;
@@ -599,7 +599,7 @@ public class ProductImportServiceImpl implements ProductImportService {
 
         String typeRaw = text(row, cols, Col.TYPE, f, ev);
         if (!typeRaw.isEmpty()) {
-            r.type = ProductCatalog.resolveType(typeRaw).orElse(null);
+            r.type = itemTypes.resolve(typeRaw).orElse(null);
             if (r.type == null) note(r, Col.TYPE, "غير موجود في القائمة", typeRaw);
         }
         r.color = catalogValue(r, row, cols, Col.COLOR, ProductCatalog.COLORS, f, ev);

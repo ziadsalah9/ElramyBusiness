@@ -1,6 +1,5 @@
 package Elramy.Group.MafroshartElramyz.services;
 
-import Elramy.Group.MafroshartElramyz.enums.ProductType;
 import Elramy.Group.MafroshartElramyz.enums.TransactionType;
 import Elramy.Group.MafroshartElramyz.exception.ResourceNotFoundException;
 import Elramy.Group.MafroshartElramyz.mapping.ProductMapper;
@@ -40,7 +39,7 @@ class StockServiceImplTest {
         ledger = mock(StockTransactionRepository.class);
         em = mock(EntityManager.class);
         service = new StockServiceImpl(variants, ledger, mock(UserService.class), em);
-        product = Product.builder().id(1L).code("PRD-1").name("لحاف").itemType(ProductType.لحاف)
+        product = Product.builder().id(1L).code("PRD-1").name("لحاف").itemType("لحاف")
                 .minimumQuantity(5).active(true).build();
         redSmall = ProductVariant.builder().id(11L).product(product).color("أحمر").size("صغير").code("PRD-1-1").quantity(4).build();
         yellowMedium = ProductVariant.builder().id(12L).product(product).color("أصفر").size("وسط").code("PRD-1-2").quantity(3).build();

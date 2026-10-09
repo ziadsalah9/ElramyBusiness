@@ -4,7 +4,6 @@ import Elramy.Group.MafroshartElramyz.activity.ActivityAction;
 import Elramy.Group.MafroshartElramyz.activity.ActivityEntity;
 import Elramy.Group.MafroshartElramyz.activity.ActivityLogService;
 import Elramy.Group.MafroshartElramyz.activity.Changes;
-import Elramy.Group.MafroshartElramyz.enums.ProductType;
 import Elramy.Group.MafroshartElramyz.enums.TransactionType;
 import Elramy.Group.MafroshartElramyz.dto.product.CreateProductPriceRequest;
 import Elramy.Group.MafroshartElramyz.dto.product.CreateProductRequest;
@@ -43,6 +42,7 @@ public class ProductDraftServiceImpl implements ProductDraftService {
     private final ProductService productService;
     private final StockService stockService;
     private final ActivityLogService activityLog;
+    private final Elramy.Group.MafroshartElramyz.producttype.ItemTypeService itemTypes;
 
 
     @Override
@@ -69,7 +69,7 @@ public class ProductDraftServiceImpl implements ProductDraftService {
         if (model != null && model.length() > ProductFieldRules.MAX_MODEL) {
             throw new IllegalArgumentException("الموديل يجب ألا يزيد عن " + ProductFieldRules.MAX_MODEL + " حرف");
         }
-        ProductType type = blankToNull(r.itemType()) == null ? null : ProductCatalog.resolveType(r.itemType())
+        String type = blankToNull(r.itemType()) == null ? null : itemTypes.resolve(r.itemType())
                 .orElseThrow(() -> new IllegalArgumentException("النوع \"" + r.itemType() + "\" غير موجود في القائمة"));
         Integer minimum = wholeNumber(r.minimumQuantity(), "الحد الأدنى");
         Integer total = wholeNumber(r.totalQuantity(), ProductFieldRules.TOTAL);
@@ -301,7 +301,7 @@ public class ProductDraftServiceImpl implements ProductDraftService {
     }
 
     static ProductDraftResponse toResponse(ProductDraft d) {
-        ProductType t = d.getItemType();
+        String t = d.getItemType();
         List<String> notes = d.getImportNotes() == null || d.getImportNotes().isBlank()
                 ? List.of()
                 : Arrays.stream(d.getImportNotes().split("\n")).filter(s -> !s.isBlank()).toList();
@@ -309,7 +309,7 @@ public class ProductDraftServiceImpl implements ProductDraftService {
                 .map(v -> new ProductDraftVariantDto(v.getId(), v.getColor(), v.getSize(), v.getQuantity(), v.getSourceRow()))
                 .toList();
         return new ProductDraftResponse(
-                d.getId(), d.getName(), t == null ? null : t.name(), d.getModel(), d.getMinimumQuantity(),
+                d.getId(), d.getName(), t, d.getModel(), d.getMinimumQuantity(),
                 d.getPurchasePrice(), d.getProfitPercentage(), d.getSellingPrice(),
                 variants, missing(d), notes, d.getSourceFile(), d.getSourceRow(), d.getCreatedAt(), d.getTotalQuantity());
     }

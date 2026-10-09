@@ -1,6 +1,5 @@
 package Elramy.Group.MafroshartElramyz.models;
 
-import Elramy.Group.MafroshartElramyz.enums.ProductType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -29,8 +28,9 @@ public class ProductDraft extends BaseEntity {
     @Column(length = 200)
     private String name;
 
-    @Enumerated(EnumType.STRING)
-    private ProductType itemType;
+    /** Name of a product type (product_types, V24). */
+    @Column(name = "item_type")
+    private String itemType;
 
     @Column(length = 100)
     private String model;
