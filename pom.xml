@@ -121,10 +121,36 @@
 			<artifactId>spring-boot-starter-webmvc-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<!-- Tests run on a throwaway PostgreSQL container, never the shop's database. -->
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>testcontainers-postgresql</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>
 		<plugins>
+			<!--
+			  Every test JVM gets a Testcontainers JDBC URL: any test that opens a
+			  database connection starts a fresh postgres:16 container (same
+			  version as production) and Flyway builds the schema in it. System
+			  properties beat application.properties, so no test can fall back
+			  to the real ElramyGroup database. Needs Docker.
+			-->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<systemPropertyVariables>
+						<spring.datasource.url>jdbc:tc:postgresql:16-alpine:///elramy_test</spring.datasource.url>
+						<spring.datasource.driver-class-name>org.testcontainers.jdbc.ContainerDatabaseDriver</spring.datasource.driver-class-name>
+						<spring.datasource.username>test</spring.datasource.username>
+						<spring.datasource.password>test</spring.datasource.password>
+						<JWT_SECRET>test-only-jwt-secret-not-used-anywhere-else-0123456789</JWT_SECRET>
+					</systemPropertyVariables>
+				</configuration>
+			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>

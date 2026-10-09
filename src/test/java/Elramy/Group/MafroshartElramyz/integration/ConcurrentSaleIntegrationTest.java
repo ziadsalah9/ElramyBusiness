@@ -9,7 +9,6 @@ import Elramy.Group.MafroshartElramyz.repository.ProductVariantRepository;
 import Elramy.Group.MafroshartElramyz.repository.UserRepository;
 import Elramy.Group.MafroshartElramyz.services.StockService;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -31,15 +30,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  * Two cashiers sell the same colour/size at the same moment, each having
  * loaded the variant before taking the lock (exactly what an invoice does).
- * Real PostgreSQL row locks are needed, so this runs only on request and
- * must be pointed at a throwaway copy of the database:
- *
- *   DB_URL=jdbc:postgresql://localhost:5432/elramy_dryrun \
- *   ./mvnw test -Dtest=ConcurrentSaleIT -Dit.db=true
+ * Needs real PostgreSQL row locks: it runs on the throwaway Testcontainers
+ * database that every test uses (see the surefire settings in pom.xml).
  */
 @SpringBootTest
-@EnabledIfSystemProperty(named = "it.db", matches = "true")
-class ConcurrentSaleIT {
+class ConcurrentSaleIntegrationTest {
 
     @Autowired private StockService stockService;
     @Autowired private ProductRepository products;
