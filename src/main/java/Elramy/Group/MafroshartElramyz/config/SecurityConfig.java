@@ -172,6 +172,16 @@ public class SecurityConfig {
                         // so opening the path up would only weaken it.
 
                         // -----------------------------------------
+                        // THE WEB APP ITSELF
+                        // -----------------------------------------
+                        // The built frontend (index.html, JS, CSS) is
+                        // served by this application; its files are
+                        // public, every /api call still needs a token.
+
+                        .requestMatchers("/api/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/**").permitAll()
+
+                        // -----------------------------------------
                         // EVERYTHING ELSE
                         // -----------------------------------------
 
