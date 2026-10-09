@@ -57,6 +57,11 @@ public class SalesReturn extends BaseEntity {
     @Column(length = 500)
     private String reason;
 
+    /** Set when this return is part of an exchange: the sale of the new items (V22). */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "exchange_invoice_id")
+    private SalesInvoice exchangeInvoice;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")
     private User createdBy;

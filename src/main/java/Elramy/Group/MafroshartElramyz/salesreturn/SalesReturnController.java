@@ -14,6 +14,7 @@ import java.util.List;
 public class SalesReturnController {
 
     private final SalesReturnService service;
+    private final ExchangeService exchangeService;
 
     /** Making a return is ADMIN-only. */
     @PostMapping("/api/sales-invoices/{id}/returns")
@@ -21,6 +22,14 @@ public class SalesReturnController {
     @ResponseStatus(HttpStatus.CREATED)
     public ReturnResponse create(@PathVariable Long id, @Valid @RequestBody ReturnRequest request) {
         return service.create(id, request);
+    }
+
+    /** Exchange: return items and take new ones in one step (ADMIN). */
+    @PostMapping("/api/sales-invoices/{id}/exchange")
+    @PreAuthorize("hasRole('ADMIN')")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ExchangeResponse exchange(@PathVariable Long id, @Valid @RequestBody ExchangeRequest request) {
+        return exchangeService.exchange(id, request);
     }
 
     @GetMapping("/api/sales-invoices/{id}/returns")

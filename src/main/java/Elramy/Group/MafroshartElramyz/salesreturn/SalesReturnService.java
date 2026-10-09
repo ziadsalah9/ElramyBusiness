@@ -22,6 +22,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.function.Function;
 
 /**
  * Returns of sold items (مرتجعات), ADMIN-only.
@@ -48,14 +49,39 @@ public class SalesReturnService {
 
     public ReturnResponse create(Long invoiceId, ReturnRequest request) {
         SalesInvoice invoice = invoices.findById(invoiceId).orElseThrow(() -> new SalesInvoiceNotFoundException(invoiceId));
+        Function<BigDecimal, BigDecimal> creditFor = value -> {
+            if (request.refundMethod() != RefundMethod.CREDIT || invoice.getCustomer() == null) return BigDecimal.ZERO;
+            return value.min(accounts.balance(invoice.getCustomer().getId()).max(BigDecimal.ZERO));
+        };
+        return toResponse(doReturn(invoice, request.items(), request.reason(), creditFor, null));
+    }
+
+    /** Value the items would be refunded at (what the customer paid for them), without saving anything. */
+    @Transactional(readOnly = true)
+    public BigDecimal previewValue(SalesInvoice invoice, List<ItemRequest> items) {
+        BigDecimal ratio = discountRatio(invoice);
+        Map<Long, SalesInvoiceItem> lines = new HashMap<>();
+        for (SalesInvoiceItem i : invoice.getItems()) lines.put(i.getId(), i);
+        BigDecimal value = BigDecimal.ZERO;
+        for (ItemRequest r : items) {
+            SalesInvoiceItem line = lines.get(r.invoiceItemId());
+            if (line == null) throw new IllegalArgumentException("الصنف رقم " + r.invoiceItemId() + " ليس في هذه الفاتورة.");
+            value = value.add(unitRefund(line, ratio).multiply(BigDecimal.valueOf(r.quantity())).setScale(2, RoundingMode.HALF_UP));
+        }
+        return value.min(invoice.getTotal().subtract(invoice.getReturnedTotal()));
+    }
+
+    /**
+     * The return itself. {@code creditFor} turns the return value into the
+     * part credited to the customer's account; the rest is paid in cash.
+     */
+    SalesReturn doReturn(SalesInvoice invoice, List<ItemRequest> items, String reason,
+                         Function<BigDecimal, BigDecimal> creditFor, SalesInvoice exchangeInvoice) {
 
         Map<Long, SalesInvoiceItem> lines = new HashMap<>();
         for (SalesInvoiceItem i : invoice.getItems()) lines.put(i.getId(), i);
 
-        // Invoice-level discount, spread over the lines in proportion.
-        BigDecimal linesTotal = invoice.getItems().stream().map(SalesInvoiceItem::getTotal).reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal ratio = linesTotal.signum() == 0 ? BigDecimal.ZERO
-                : invoice.getTotal().divide(linesTotal, 10, RoundingMode.HALF_UP);
+        BigDecimal ratio = discountRatio(invoice);
 
         String prefix = "RET-" + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + "-";
         SalesReturn ret = SalesReturn.builder()
@@ -63,14 +89,15 @@ public class SalesReturnService {
                 .invoice(invoice)
                 .customer(invoice.getCustomer())
                 .branch(invoice.getBranch())
-                .reason(request.reason() == null || request.reason().isBlank() ? null : request.reason().trim())
+                .reason(reason == null || reason.isBlank() ? null : reason.trim())
+                .exchangeInvoice(exchangeInvoice)
                 .createdBy(userService.getCurrentUser())
                 .build();
 
         Set<Long> seen = new HashSet<>();
         BigDecimal value = BigDecimal.ZERO;
         Changes changes = Changes.of();
-        for (ItemRequest r : request.items()) {
+        for (ItemRequest r : items) {
             if (!seen.add(r.invoiceItemId())) throw new IllegalArgumentException("نفس الصنف مكرر في طلب الإرجاع.");
             SalesInvoiceItem line = lines.get(r.invoiceItemId());
             if (line == null) throw new IllegalArgumentException("الصنف رقم " + r.invoiceItemId() + " ليس في هذه الفاتورة.");
@@ -80,8 +107,7 @@ public class SalesReturnService {
                 throw new IllegalArgumentException(line.getProduct().getName() + " (" + line.getVariant().label() + "): المتاح للإرجاع "
                         + available + " فقط.");
             }
-            BigDecimal unit = line.getTotal().divide(BigDecimal.valueOf(line.getQuantity()), 10, RoundingMode.HALF_UP)
-                    .multiply(ratio).setScale(2, RoundingMode.HALF_UP);
+            BigDecimal unit = unitRefund(line, ratio);
             BigDecimal lineValue = unit.multiply(BigDecimal.valueOf(r.quantity())).setScale(2, RoundingMode.HALF_UP);
             ret.getItems().add(SalesReturnItem.builder().salesReturn(ret).invoiceItem(line).product(line.getProduct())
                     .variant(line.getVariant()).quantity(r.quantity()).unitRefund(unit).total(lineValue).build());
@@ -95,11 +121,7 @@ public class SalesReturnService {
         if (value.compareTo(left) > 0) value = left;
         if (value.signum() <= 0) throw new IllegalArgumentException("لا توجد قيمة متبقية للإرجاع في هذه الفاتورة.");
 
-        BigDecimal credit = BigDecimal.ZERO;
-        if (request.refundMethod() == RefundMethod.CREDIT && invoice.getCustomer() != null) {
-            BigDecimal owed = accounts.balance(invoice.getCustomer().getId()).max(BigDecimal.ZERO);
-            credit = value.min(owed);
-        }
+        BigDecimal credit = creditFor.apply(value).max(BigDecimal.ZERO).min(value);
         ret.setTotal(value);
         ret.setCreditAmount(credit);
         ret.setCashRefund(value.subtract(credit));
@@ -120,7 +142,19 @@ public class SalesReturnService {
         activityLog.record(ActivityEntity.SALES_RETURN, ActivityAction.CREATE, saved.getId(), saved.getReturnNumber(),
                 "مرتجع " + saved.getReturnNumber() + " من الفاتورة " + invoice.getInvoiceNumber() + " بقيمة " + plain(value) + " ج.م",
                 changes);
-        return toResponse(saved);
+        return saved;
+    }
+
+    /** Invoice-level discount, spread over the lines in proportion. */
+    private static BigDecimal discountRatio(SalesInvoice invoice) {
+        BigDecimal linesTotal = invoice.getItems().stream().map(SalesInvoiceItem::getTotal).reduce(BigDecimal.ZERO, BigDecimal::add);
+        return linesTotal.signum() == 0 ? BigDecimal.ZERO : invoice.getTotal().divide(linesTotal, 10, RoundingMode.HALF_UP);
+    }
+
+    /** What one piece of the line really cost the customer. */
+    private static BigDecimal unitRefund(SalesInvoiceItem line, BigDecimal ratio) {
+        return line.getTotal().divide(BigDecimal.valueOf(line.getQuantity()), 10, RoundingMode.HALF_UP)
+                .multiply(ratio).setScale(2, RoundingMode.HALF_UP);
     }
 
     @Transactional(readOnly = true)
@@ -143,7 +177,9 @@ public class SalesReturnService {
                 r.getCustomer() != null ? r.getCustomer().getId() : null, r.getCustomer() != null ? r.getCustomer().getName() : null,
                 r.getCustomer() != null ? r.getCustomer().getPhone() : null, r.getBranch() != null ? r.getBranch().getId() : null,
                 r.getTotal(), r.getCashRefund(), r.getCreditAmount(), r.getReason(),
-                r.getCreatedBy() != null ? r.getCreatedBy().getFullName() : null, r.getCreatedAt(), items);
+                r.getCreatedBy() != null ? r.getCreatedBy().getFullName() : null, r.getCreatedAt(), items,
+                r.getExchangeInvoice() != null ? r.getExchangeInvoice().getId() : null,
+                r.getExchangeInvoice() != null ? r.getExchangeInvoice().getInvoiceNumber() : null);
     }
 
     private static String plain(BigDecimal v) {

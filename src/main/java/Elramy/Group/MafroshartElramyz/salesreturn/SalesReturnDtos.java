@@ -37,6 +37,33 @@ public final class SalesReturnDtos {
             Long id, String returnNumber, Long invoiceId, String invoiceNumber,
             Long customerId, String customerName, String customerPhone, Long branchId,
             BigDecimal total, BigDecimal cashRefund, BigDecimal creditAmount, String reason,
-            String createdByName, LocalDateTime createdAt, List<ItemResponse> items) {
+            String createdByName, LocalDateTime createdAt, List<ItemResponse> items,
+            /** Set when the return is part of an exchange. */
+            Long exchangeInvoiceId, String exchangeInvoiceNumber) {
+    }
+
+    /** Return some items and take new ones in one step (ADMIN). */
+    public record ExchangeRequest(
+            @NotEmpty(message = "اختر صنفاً واحداً على الأقل للإرجاع") List<@Valid ItemRequest> returnItems,
+            @NotEmpty(message = "اختر صنفاً جديداً واحداً على الأقل") List<@Valid NewItem> newItems,
+            /** How the customer pays the difference when the new items cost more. */
+            Elramy.Group.MafroshartElramyz.enums.PaymentMethod paymentMethod,
+            /** Paid now towards the difference (0..difference); the rest is owed. */
+            @jakarta.validation.constraints.DecimalMin(value = "0.0", message = "المبلغ لا يمكن أن يكون سالباً") java.math.BigDecimal paid,
+            /** Cash part of `paid` when paymentMethod is MIXED. */
+            @jakarta.validation.constraints.DecimalMin(value = "0.0", message = "المبلغ لا يمكن أن يكون سالباً") java.math.BigDecimal cashAmount,
+            /** When the new items cost less: refund the rest in cash or credit it. */
+            RefundMethod refundMethod,
+            @Size(max = 500, message = "السبب طويل جداً") String reason) {
+    }
+
+    public record NewItem(
+            @NotNull(message = "اختر اللون/المقاس") Long variantId,
+            @NotNull(message = "الكمية مطلوبة") @Min(value = 1, message = "الكمية يجب أن تكون 1 على الأقل") Integer quantity) {
+    }
+
+    public record ExchangeResponse(ReturnResponse returned, Elramy.Group.MafroshartElramyz.dto.salesInvoice.SalesInvoiceResponse newInvoice,
+                                   java.math.BigDecimal returnValue, java.math.BigDecimal newTotal, java.math.BigDecimal paidNow,
+                                   java.math.BigDecimal refundedCash, java.math.BigDecimal addedToBalance) {
     }
 }
