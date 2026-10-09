@@ -23,7 +23,8 @@ import java.util.Optional;
 /**
  * Installment sales (تقسيط).
  *
- * principal = invoice total - paid at the sale; markup = principal x %;
+ * principal = invoice total - paid at the sale; markup = INVOICE TOTAL x %
+ * (the whole amount, down payment included);
  * total = principal + markup, split into equal months (the last one takes
  * the rounding). Customer payments go to the oldest unpaid installment
  * first; a return credited on the invoice shortens the plan from its end.
@@ -44,7 +45,8 @@ public class InstallmentService {
             throw new IllegalArgumentException("لا يوجد مبلغ متبقٍ للتقسيط: المقدم يساوي إجمالي الفاتورة.");
         }
         BigDecimal pct = request.markupPercent().setScale(2, RoundingMode.HALF_UP);
-        BigDecimal markup = principal.multiply(pct).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+        // The % applies to the whole invoice, not only to what is left after the down payment.
+        BigDecimal markup = invoice.getTotal().multiply(pct).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
         BigDecimal total = principal.add(markup);
         LocalDate first = request.firstDueDate() != null ? request.firstDueDate() : LocalDate.now().plusMonths(1);
         if (first.isBefore(LocalDate.now())) throw new IllegalArgumentException("أول قسط لا يمكن أن يكون في الماضي.");
@@ -60,7 +62,7 @@ public class InstallmentService {
         InstallmentPlan saved = plans.save(plan);
         activityLog.record(ActivityEntity.INSTALLMENT, ActivityAction.CREATE, saved.getId(), invoice.getInvoiceNumber(),
                 "تقسيط الفاتورة " + invoice.getInvoiceNumber() + " على " + request.months() + " شهر",
-                Changes.of().set("المتبقي", plain(principal)).set("نسبة الزيادة %", plain(pct)).set("قيمة الزيادة", plain(markup))
+                Changes.of().set("إجمالي الفاتورة", plain(invoice.getTotal())).set("المتبقي", plain(principal)).set("نسبة الزيادة %", plain(pct)).set("قيمة الزيادة", plain(markup))
                         .set("إجمالي الأقساط", plain(total)).set("القسط", plain(amounts.get(0))).set("أول قسط", first));
         return saved;
     }

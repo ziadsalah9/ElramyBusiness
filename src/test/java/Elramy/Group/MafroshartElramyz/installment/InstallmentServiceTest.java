@@ -39,18 +39,18 @@ class InstallmentServiceTest {
     }
 
     @Test
-    void theRestPlusMarkupIsSplitIntoMonthsTheLastTakesTheRounding() {
+    void theMarkupIsOnTheWholeInvoiceAndTheRestPlusMarkupIsSplitIntoMonths() {
         LocalDate first = LocalDate.now().plusDays(10);
         InstallmentPlan p = service.createPlan(invoice, new InstallmentRequest(3, new BigDecimal("10"), first), null);
 
-        eq("1000", p.getPrincipal());
-        eq("100", p.getMarkupAmount());
-        eq("1100", p.getTotalAmount());
+        eq("1000", p.getPrincipal());                       // 1100 invoice - 100 down payment
+        eq("110", p.getMarkupAmount());                     // 10% of the WHOLE invoice (1100), not of 1000
+        eq("1110", p.getTotalAmount());
         assertEquals(3, p.getInstallments().size());
-        eq("366.66", p.getInstallments().get(0).getAmount());
-        eq("366.68", p.getInstallments().get(2).getAmount());   // 1100 - 2 x 366.66
+        eq("370", p.getInstallments().get(0).getAmount());
+        eq("370", p.getInstallments().get(2).getAmount());
         assertEquals(first.plusMonths(2), p.getInstallments().get(2).getDueDate());
-        eq("1100", p.getInstallments().stream().map(Installment::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add));
+        eq("1110", p.getInstallments().stream().map(Installment::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add));
     }
 
     @Test
@@ -96,5 +96,12 @@ class InstallmentServiceTest {
         assertEquals(Status.OVERDUE, r.installments().get(0).status());
         assertEquals(3, r.installments().get(0).daysLate());
         assertEquals(Status.DUE, r.installments().get(1).status());
+    }
+
+    @Test
+    void theLastMonthTakesTheRounding() {
+        List<BigDecimal> parts = InstallmentService.split(new BigDecimal("1100"), 3);
+        eq("366.66", parts.get(0));
+        eq("366.68", parts.get(2));
     }
 }

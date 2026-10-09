@@ -15,7 +15,10 @@ public final class InstallmentDtos {
     private InstallmentDtos() {
     }
 
-    /** Sent with a sale to sell on installments (ADMIN). firstDueDate: default one month after the sale. */
+    /**
+     * Sent with a sale to sell on installments (ADMIN). The markup % applies to
+     * the whole invoice total. firstDueDate: default one month after the sale.
+     */
     public record InstallmentRequest(
             @NotNull(message = "عدد الشهور مطلوب") @Min(value = 1, message = "شهر واحد على الأقل") @Max(value = 60, message = "أقصى مدة 60 شهراً") Integer months,
             @NotNull(message = "نسبة الزيادة مطلوبة (0 مقبول)")
