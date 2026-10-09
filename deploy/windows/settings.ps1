@@ -51,12 +51,16 @@ function Invoke-PgSql([string]$PgBin, [string]$User, [string]$Database, [string]
     # The SQL goes through a file, not -c: Windows PowerShell 5.1 drops double quotes
     # inside arguments to programs, so CREATE DATABASE "ElramyGroup" would reach psql
     # as CREATE DATABASE ElramyGroup and create "elramygroup" instead.
-    $file = Join-Path $env:TEMP ('elramy-' + [guid]::NewGuid().ToString() + '.sql')
-    Set-Content -Path $file -Value $Sql -Encoding ASCII
+    # Kept under C:\Elramy: %TEMP% can be an 8.3 short path (user names with spaces,
+    # e.g. C:\Users\ALAQSA~1) that Remove-Item in PowerShell 5.1 cannot handle.
+    $tmpDir = Join-Path $ElramyRoot 'tmp'
+    [System.IO.Directory]::CreateDirectory($tmpDir) | Out-Null
+    $file = Join-Path $tmpDir ('sql-' + [guid]::NewGuid().ToString() + '.sql')
+    [System.IO.File]::WriteAllText($file, $Sql, [System.Text.Encoding]::ASCII)
     try {
         & (Join-Path $PgBin 'psql.exe') -X -q -v ON_ERROR_STOP=1 -h localhost -p (Get-DbPort) -U $User -d $Database -f $file
     } finally {
-        Remove-Item $file -Force -ErrorAction SilentlyContinue
+        try { [System.IO.File]::Delete($file) } catch { }
     }
 }
 

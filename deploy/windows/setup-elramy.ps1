@@ -95,7 +95,19 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Creating the store database failed.' }
         # Older setups created it in lowercase by mistake (empty, never used): remove that.
         Invoke-PgSql $pgBin 'postgres' 'postgres' "DROP DATABASE IF EXISTS elramygroup;" | Out-Null
-        Set-Content -Path (Join-Path $SecretsDir 'admin-initial.secret') -Value (New-RandomSecret 9) -Encoding ASCII -NoNewline
+    }
+    # First login: needed while the database has no admin yet. Checked on the data, not on
+    # "the database was just created", so a setup interrupted after creating it still gets one.
+    $hasAdmin = $false
+    $usersTable = & $psql -h localhost -p $dbPort -U postgres -d $DbName -tAc "SELECT to_regclass('public.users') IS NOT NULL"
+    if ("$usersTable".Trim() -eq 't') {
+        $admins = & $psql -h localhost -p $dbPort -U postgres -d $DbName -tAc "SELECT count(*) FROM users WHERE role = 'ADMIN'"
+        $hasAdmin = [int]("$admins".Trim()) -gt 0
+    }
+    $firstLogin = -not $hasAdmin
+    $adminFile = Join-Path $SecretsDir 'admin-initial.secret'
+    if ($firstLogin -and -not (Test-Path $adminFile)) {
+        Set-Content -Path $adminFile -Value (New-RandomSecret 9) -Encoding ASCII -NoNewline
     }
     Remove-Item Env:\PGPASSWORD
 
@@ -118,8 +130,7 @@ try {
     $ready = Wait-ElramyApp 240
 
     $note = Join-Path $ElramyRoot 'FIRST-LOGIN.txt'
-    $adminFile = Join-Path $SecretsDir 'admin-initial.secret'
-    if ($newDatabase) {
+    if ($firstLogin) {
         @(
             'مفروشات الرامي - أول دخول / First login',
             '',
