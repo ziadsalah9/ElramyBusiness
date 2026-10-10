@@ -27,6 +27,14 @@ public interface InstallmentRepository extends JpaRepository<InstallmentPlan, Lo
             + " ORDER BY i.dueDate ASC, i.plan.id ASC, i.seq ASC")
     List<Installment> unpaidByCustomer(@Param("customerId") Long customerId);
 
+    /** Every plan with its customer, invoice and schedule (one query), for the customers overview. */
+    @Query("SELECT DISTINCT p FROM InstallmentPlan p JOIN FETCH p.customer JOIN FETCH p.invoice LEFT JOIN FETCH p.installments")
+    List<InstallmentPlan> findAllWithSchedule();
+
+    @Query("SELECT DISTINCT p FROM InstallmentPlan p JOIN FETCH p.customer JOIN FETCH p.invoice LEFT JOIN FETCH p.installments"
+            + " WHERE p.customer.id = :customerId")
+    List<InstallmentPlan> findByCustomerWithSchedule(@Param("customerId") Long customerId);
+
     /** Unpaid installments due on or before a day (overdue / coming up). */
     @Query("SELECT i FROM Installment i JOIN FETCH i.plan p JOIN FETCH p.customer JOIN FETCH p.invoice"
             + " WHERE i.paidAmount < i.amount AND i.dueDate <= :until ORDER BY i.dueDate ASC, p.id ASC, i.seq ASC")

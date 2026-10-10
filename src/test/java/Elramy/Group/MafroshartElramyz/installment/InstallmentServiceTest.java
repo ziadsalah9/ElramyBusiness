@@ -104,4 +104,60 @@ class InstallmentServiceTest {
         eq("366.66", parts.get(0));
         eq("366.68", parts.get(2));
     }
+
+    /** A plan for {@code customer} whose installments are (due in N days from today, amount, paid). */
+    private static InstallmentPlan plan(Customer customer, long id, Object[]... rows) {
+        SalesInvoice sale = SalesInvoice.builder().id(id).invoiceNumber("INV-" + id).build();
+        sale.setCreatedAt(LocalDateTime.now().minusMonths(2));
+        InstallmentPlan p = InstallmentPlan.builder().id(id).customer(customer).months(rows.length)
+                .invoice(sale).firstDueDate(LocalDate.now()).build();
+        BigDecimal total = BigDecimal.ZERO;
+        int seq = 1;
+        for (Object[] r : rows) {
+            BigDecimal amount = new BigDecimal((String) r[1]);
+            total = total.add(amount);
+            p.getInstallments().add(Installment.builder().plan(p).seq(seq++).dueDate(LocalDate.now().plusDays((Integer) r[0]))
+                    .amount(amount).paidAmount(new BigDecimal((String) r[2])).build());
+        }
+        p.setTotalAmount(total);
+        return p;
+    }
+
+    @Test
+    void customersSummariseAllTheirPlansAndTheMostLateComeFirst() {
+        Customer late = Customer.builder().id(1L).name("متأخر").phone("011").build();
+        Customer paying = Customer.builder().id(2L).name("منتظم").phone("012").build();
+        Customer done = Customer.builder().id(3L).name("خلّص").phone("013").build();
+        when(plans.findAllWithSchedule()).thenReturn(List.of(
+                plan(done, 1, new Object[]{-40, "100", "100"}),
+                plan(paying, 2, new Object[]{-10, "100", "100"}, new Object[]{20, "100", "30"}),
+                // two plans for the late customer: 15 and 5 days late, one partly paid
+                plan(late, 3, new Object[]{-15, "200", "50"}, new Object[]{15, "200", "0"}),
+                plan(late, 4, new Object[]{-5, "100", "0"})));
+
+        List<CustomerSummary> list = service.customers();
+
+        assertEquals(List.of("متأخر", "منتظم", "خلّص"), list.stream().map(CustomerSummary::customerName).toList());
+        CustomerSummary l = list.get(0);
+        assertEquals(2, l.plans());
+        assertEquals(2, l.openPlans());
+        eq("500", l.totalAmount());
+        eq("50", l.paid());
+        eq("450", l.remaining());
+        assertEquals(2, l.overdueCount());
+        eq("250", l.overdueAmount());                       // 150 left of the first + 100
+        assertEquals(15, l.maxDaysLate());
+        assertEquals(LocalDate.now().minusDays(15), l.nextDueDate());
+        eq("150", l.nextDueAmount());
+
+        CustomerSummary p = list.get(1);
+        assertEquals(0, p.overdueCount());
+        eq("70", p.remaining());
+        assertEquals(LocalDate.now().plusDays(20), p.nextDueDate());
+
+        CustomerSummary d = list.get(2);
+        assertEquals(0, d.openPlans());
+        eq("0", d.remaining());
+        assertNull(d.nextDueDate());
+    }
 }

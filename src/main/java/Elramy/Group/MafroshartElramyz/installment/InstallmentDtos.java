@@ -39,6 +39,17 @@ public final class InstallmentDtos {
                                List<InstallmentRow> installments) {
     }
 
+    /**
+     * One customer's installment position over all their plans: what was
+     * financed (plan totals incl. markup), paid and still owed, what is
+     * overdue, and the next installment to collect.
+     */
+    public record CustomerSummary(Long customerId, String customerName, String customerPhone, int plans, int openPlans,
+                                  BigDecimal totalAmount, BigDecimal paid, BigDecimal remaining,
+                                  int overdueCount, BigDecimal overdueAmount, long maxDaysLate,
+                                  LocalDate nextDueDate, BigDecimal nextDueAmount, LocalDate lastPlanDate) {
+    }
+
     /** An unpaid installment for the follow-up list. */
     public record DueRow(Long installmentId, Long planId, Long invoiceId, String invoiceNumber, Long customerId,
                          String customerName, String customerPhone, int seq, int months, LocalDate dueDate,

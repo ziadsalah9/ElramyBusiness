@@ -24,6 +24,18 @@ public class InstallmentController {
         return service.forInvoice(id).map(ResponseEntity::ok).orElse(ResponseEntity.noContent().build());
     }
 
+    /** Every customer with installment plans: financed, paid, owed, overdue and next due. */
+    @GetMapping("/api/installments/customers")
+    public List<CustomerSummary> customers() {
+        return service.customers();
+    }
+
+    /** One customer's plans with their full schedules. */
+    @GetMapping("/api/installments/customers/{customerId}")
+    public List<PlanResponse> forCustomer(@PathVariable Long customerId) {
+        return service.forCustomer(customerId);
+    }
+
     /** Unpaid installments due within the next {@code days} days (overdue ones included). */
     @GetMapping("/api/installments/due")
     public List<DueRow> due(@RequestParam(defaultValue = "0") int days) {

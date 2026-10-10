@@ -17,7 +17,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -120,6 +123,71 @@ public class InstallmentService {
                     p.getCustomer().getName(), p.getCustomer().getPhone(), i.getSeq(), p.getMonths(), i.getDueDate(),
                     i.getAmount(), i.getPaidAmount(), i.remaining(), late);
         }).toList();
+    }
+
+    /**
+     * Every customer who bought on installments, worst first: overdue
+     * customers (longest late first), then those still paying (nearest due
+     * first), then the ones who finished.
+     */
+    @Transactional(readOnly = true)
+    public List<CustomerSummary> customers() {
+        LocalDate today = LocalDate.now();
+        Map<Long, List<InstallmentPlan>> byCustomer = new LinkedHashMap<>();
+        for (InstallmentPlan p : plans.findAllWithSchedule()) {
+            byCustomer.computeIfAbsent(p.getCustomer().getId(), k -> new ArrayList<>()).add(p);
+        }
+        List<CustomerSummary> out = new ArrayList<>();
+        for (List<InstallmentPlan> list : byCustomer.values()) {
+            out.add(summarize(list, today));
+        }
+        out.sort(Comparator
+                .comparing((CustomerSummary s) -> s.overdueCount() > 0 ? 0 : s.remaining().signum() > 0 ? 1 : 2)
+                .thenComparing(s -> -s.maxDaysLate())
+                .thenComparing(s -> s.nextDueDate() == null ? LocalDate.MAX : s.nextDueDate())
+                .thenComparing(CustomerSummary::customerName, Comparator.nullsLast(Comparator.naturalOrder())));
+        return out;
+    }
+
+    /** One customer's plans with their schedules, newest first. */
+    @Transactional(readOnly = true)
+    public List<PlanResponse> forCustomer(Long customerId) {
+        return plans.findByCustomerWithSchedule(customerId).stream()
+                .sorted(Comparator.comparing((InstallmentPlan p) -> p.getInvoice().getCreatedAt(), Comparator.nullsLast(Comparator.naturalOrder())).reversed())
+                .map(InstallmentService::toResponse)
+                .toList();
+    }
+
+    static CustomerSummary summarize(List<InstallmentPlan> list, LocalDate today) {
+        InstallmentPlan first = list.get(0);
+        BigDecimal total = BigDecimal.ZERO, paid = BigDecimal.ZERO, remaining = BigDecimal.ZERO, overdue = BigDecimal.ZERO;
+        int overdueCount = 0, openPlans = 0;
+        long maxLate = 0;
+        Installment next = null;
+        LocalDate lastPlan = null;
+        for (InstallmentPlan p : list) {
+            total = total.add(p.getTotalAmount());
+            boolean open = false;
+            for (Installment i : p.getInstallments()) {
+                paid = paid.add(i.getPaidAmount());
+                BigDecimal left = i.remaining();
+                if (left.signum() <= 0) continue;
+                open = true;
+                remaining = remaining.add(left);
+                if (i.getDueDate().isBefore(today)) {
+                    overdueCount++;
+                    overdue = overdue.add(left);
+                    maxLate = Math.max(maxLate, ChronoUnit.DAYS.between(i.getDueDate(), today));
+                }
+                if (next == null || i.getDueDate().isBefore(next.getDueDate())) next = i;
+            }
+            if (open) openPlans++;
+            LocalDate created = p.getInvoice().getCreatedAt() == null ? p.getFirstDueDate() : p.getInvoice().getCreatedAt().toLocalDate();
+            if (lastPlan == null || created.isAfter(lastPlan)) lastPlan = created;
+        }
+        return new CustomerSummary(first.getCustomer().getId(), first.getCustomer().getName(), first.getCustomer().getPhone(),
+                list.size(), openPlans, total, paid, remaining, overdueCount, overdue, maxLate,
+                next == null ? null : next.getDueDate(), next == null ? null : next.remaining(), lastPlan);
     }
 
     static PlanResponse toResponse(InstallmentPlan p) {
