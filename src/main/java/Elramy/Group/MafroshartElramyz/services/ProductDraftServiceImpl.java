@@ -43,6 +43,7 @@ public class ProductDraftServiceImpl implements ProductDraftService {
     private final StockService stockService;
     private final ActivityLogService activityLog;
     private final Elramy.Group.MafroshartElramyz.producttype.ItemTypeService itemTypes;
+    private final Elramy.Group.MafroshartElramyz.productcolor.ProductColorService colors;
 
 
     @Override
@@ -85,7 +86,7 @@ public class ProductDraftServiceImpl implements ProductDraftService {
             wanted = new ArrayList<>();
             Set<String> seen = new HashSet<>();
             for (ProductDraftVariantDto v : r.variants()) {
-                String color = blankToNull(v.color()) == null ? null : ProductCatalog.resolve(ProductCatalog.COLORS, v.color())
+                String color = blankToNull(v.color()) == null ? null : colors.resolve(v.color())
                         .orElseThrow(() -> new IllegalArgumentException("اللون \"" + v.color() + "\" غير موجود في القائمة"));
                 String size = ProductCatalog.sizeText(v.size());   // free text
                 if (!seen.add(ProductFieldRules.comboKey(color, size))) {

@@ -43,6 +43,7 @@ public class ProductServiceImpl implements ProductService {
     private final ProductMapper productMapper;
     private final ActivityLogService activityLog;
     private final Elramy.Group.MafroshartElramyz.producttype.ItemTypeService itemTypes;
+    private final Elramy.Group.MafroshartElramyz.productcolor.ProductColorService colors;
 
     /** Ledger reference for stock typed in the product form. */
     static final String REFERENCE_PRODUCT_FORM = "PRODUCT_FORM";
@@ -154,7 +155,7 @@ public class ProductServiceImpl implements ProductService {
         Set<Long> keep = new HashSet<>();
 
         for (ProductVariantRequest w : wanted) {
-            String color = resolveCatalog(ProductCatalog.COLORS, w.color(), "اللون", w.id() == null ? null : findIn(current, w.id()).getColor());
+            String color = colors.requireUsable(w.color(), w.id() == null ? null : findIn(current, w.id()).getColor());
             String size = ProductCatalog.sizeText(w.size());   // free text
             String combo = comboKey(color, size);
             if (!seen.add(combo)) {
@@ -251,7 +252,7 @@ public class ProductServiceImpl implements ProductService {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ProductNotFoundException(productId));
 
-        String c = resolveCatalog(ProductCatalog.COLORS, color, "اللون", null);
+        String c = colors.requireUsable(color, null);
         String sz = ProductCatalog.sizeText(size);
         String combo = comboKey(c, sz);
 
@@ -283,19 +284,6 @@ public class ProductServiceImpl implements ProductService {
     private static ProductVariant findIn(List<ProductVariant> current, Long id) {
         return current.stream().filter(v -> v.getId().equals(id)).findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("اللون/المقاس رقم " + id + " لا يخص هذا المنتج."));
-    }
-
-    /**
-     * Blank = none. Accepts the stored value or the UI label. A value that is
-     * not in the list is rejected, except when it is the variant's current
-     * (legacy) value, so old data such as "200x230" can still be saved.
-     */
-    private static String resolveCatalog(Map<String, String> catalog, String raw, String label, String currentValue) {
-        String v = ProductCatalog.normalize(raw);
-        if (v.isEmpty()) return null;
-        if (currentValue != null && ProductCatalog.normalize(currentValue).equals(v)) return currentValue;
-        return ProductCatalog.resolve(catalog, v)
-                .orElseThrow(() -> new IllegalArgumentException(label + " \"" + raw + "\" غير موجود في القائمة"));
     }
 
     private static String productLabel(Product p) {

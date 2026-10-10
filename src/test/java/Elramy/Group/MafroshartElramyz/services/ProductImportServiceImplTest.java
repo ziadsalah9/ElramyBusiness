@@ -100,7 +100,7 @@ class ProductImportServiceImplTest {
             return response(inv.getArgument(0));
         });
         when(productService.getById(anyLong())).thenAnswer(inv -> response(inv.getArgument(0)));
-        service = new ProductImportServiceImpl(productService, productRepository, stockService, draftRepository, mock(UserService.class), mock(Elramy.Group.MafroshartElramyz.activity.ActivityLogService.class), Elramy.Group.MafroshartElramyz.producttype.TestItemTypes.mock());
+        service = new ProductImportServiceImpl(productService, productRepository, stockService, draftRepository, mock(UserService.class), mock(Elramy.Group.MafroshartElramyz.activity.ActivityLogService.class), Elramy.Group.MafroshartElramyz.producttype.TestItemTypes.mock(), Elramy.Group.MafroshartElramyz.productcolor.TestColors.mock());
     }
 
     private ProductVariantResponse variant(String color, String size) {
@@ -234,7 +234,7 @@ class ProductImportServiceImplTest {
         ArgumentCaptor<CreateProductRequest> products = ArgumentCaptor.forClass(CreateProductRequest.class);
         verify(productService, times(3)).create(products.capture());
         assertEquals("طقم 4", products.getAllValues().get(0).variants().get(0).size());
-        assertEquals("متعدد", products.getAllValues().get(1).variants().get(0).color());
+        assertEquals("متعدد الألوان", products.getAllValues().get(1).variants().get(0).color());
         assertEquals("أخرى", products.getAllValues().get(1).itemType());
         assertNull(products.getAllValues().get(2).variants().get(0).color());
         assertNull(products.getAllValues().get(2).variants().get(0).size());

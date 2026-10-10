@@ -50,7 +50,7 @@ class ProductDraftServiceImplTest {
         products = mock(ProductRepository.class);
         productService = mock(ProductService.class);
         stockService = mock(StockService.class);
-        service = new ProductDraftServiceImpl(drafts, products, productService, stockService, mock(Elramy.Group.MafroshartElramyz.activity.ActivityLogService.class), Elramy.Group.MafroshartElramyz.producttype.TestItemTypes.mock());
+        service = new ProductDraftServiceImpl(drafts, products, productService, stockService, mock(Elramy.Group.MafroshartElramyz.activity.ActivityLogService.class), Elramy.Group.MafroshartElramyz.producttype.TestItemTypes.mock(), Elramy.Group.MafroshartElramyz.productcolor.TestColors.mock());
 
         draft = ProductDraft.builder().id(7L).name("لحاف").itemType("لحاف")
                 .purchasePrice(new BigDecimal("100.00")).profitPercentage(new BigDecimal("20.00")).sourceRow(5).build();
@@ -139,7 +139,7 @@ class ProductDraftServiceImplTest {
 
         assertEquals(2, draft.getVariants().size(), "rows left out are removed");
         assertEquals(10, draft.getVariants().get(0).getQuantity());
-        assertEquals("متعدد", draft.getVariants().get(1).getColor(), "labels resolved");
+        assertEquals("متعدد الألوان", draft.getVariants().get(1).getColor(), "labels resolved");
         assertEquals("طقم 4", draft.getVariants().get(1).getSize());
         assertTrue(res.missingFields().isEmpty());
 

@@ -10,35 +10,14 @@ import java.util.Optional;
  * The allowed product attribute values, shared by the Excel template
  * (dropdown lists) and the import validation.
  *
- * Keep in sync with PRODUCT_TYPES / PRODUCT_COLORS / PRODUCT_SIZES in the
- * frontend (src/types/index.ts): the product form only offers these
- * values, so an import must not accept anything else.
+ * Product types and colours are managed in the database (V24, V25).
  */
 public final class ProductCatalog {
 
     private ProductCatalog() {
     }
 
-    /** Stored value -> label shown in the UI (and accepted on import). */
-    public static final Map<String, String> COLORS = linked(
-            "أبيض", "أبيض",
-            "بيج", "بيج",
-            "رمادي", "رمادي",
-            "أسود", "أسود",
-            "كحلي", "كحلي",
-            "أحمر", "أحمر",
-            "أخضر", "أخضر",
-            "زيتي", "زيتي",
-            "بني", "بني",
-            "وردي", "وردي",
-            "أصفر", "أصفر",
-            "برتقالي", "برتقالي",
-            "بنفسجي", "بنفسجي",
-            "فيروزي", "فيروزي",
-            "ذهبي", "ذهبي",
-            "فضي", "فضي",
-            "متعدد", "متعدد الألوان"
-    );
+    // Colours live in the product_colors table (V25, ProductColorService).
 
     /**
      * Common sizes. Size is free text (typed in the product form and the
@@ -83,7 +62,7 @@ public final class ProductCatalog {
     // Product types live in the product_types table (V24, ItemTypeService).
 
 
-    /** Resolves a color/size from its stored value or its UI label. */
+    /** Resolves a size from its stored value or its old dropdown label. */
     public static Optional<String> resolve(Map<String, String> catalog, String raw) {
         String v = normalize(raw);
         if (v.isEmpty()) return Optional.empty();

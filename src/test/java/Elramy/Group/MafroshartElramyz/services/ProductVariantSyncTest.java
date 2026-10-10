@@ -44,7 +44,7 @@ class ProductVariantSyncTest {
         variants = mock(ProductVariantRepository.class);
         ledger = mock(StockTransactionRepository.class);
         stock = mock(StockService.class);
-        service = new ProductServiceImpl(products, variants, ledger, stock, new ProductMapper(), mock(Elramy.Group.MafroshartElramyz.activity.ActivityLogService.class), Elramy.Group.MafroshartElramyz.producttype.TestItemTypes.mock());
+        service = new ProductServiceImpl(products, variants, ledger, stock, new ProductMapper(), mock(Elramy.Group.MafroshartElramyz.activity.ActivityLogService.class), Elramy.Group.MafroshartElramyz.producttype.TestItemTypes.mock(), Elramy.Group.MafroshartElramyz.productcolor.TestColors.mock());
 
         when(products.existsByCode(anyString())).thenReturn(false);
         when(variants.existsByCode(anyString())).thenReturn(false);
@@ -95,7 +95,7 @@ class ProductVariantSyncTest {
     @Test
     void uiLabelsAreResolvedAndUnknownValuesRejected() {
         ProductResponse p = create(v(null, "متعدد الألوان", "طقم 4 قطع"));
-        assertEquals("متعدد", p.variants().get(0).color());
+        assertEquals("متعدد الألوان", p.variants().get(0).color());
         assertEquals("طقم 4", p.variants().get(0).size());
 
         assertThrows(IllegalArgumentException.class, () -> create(v(null, "أزرق فاتح", null)));

@@ -1,5 +1,7 @@
 package Elramy.Group.MafroshartElramyz.services;
 
+import Elramy.Group.MafroshartElramyz.productcolor.ProductColorService;
+
 import Elramy.Group.MafroshartElramyz.activity.ActivityAction;
 import Elramy.Group.MafroshartElramyz.activity.ActivityEntity;
 import Elramy.Group.MafroshartElramyz.activity.ActivityLogService;
@@ -56,6 +58,7 @@ public class ProductImportServiceImpl implements ProductImportService {
     private final UserService userService;
     private final ActivityLogService activityLog;
     private final Elramy.Group.MafroshartElramyz.producttype.ItemTypeService itemTypes;
+    private final ProductColorService colors;
 
     /** Ledger reference for opening stock entered through the import. */
     static final String REFERENCE_PRODUCT_IMPORT = "PRODUCT_IMPORT";
@@ -141,7 +144,7 @@ public class ProductImportServiceImpl implements ProductImportService {
 
             // --- Dropdown source lists (hidden sheet + named ranges) ---
             writeList(wb, lists, 0, "ProductTypes", itemTypes.activeNames());
-            writeList(wb, lists, 1, "ProductColors", new ArrayList<>(ProductCatalog.COLORS.keySet()));
+            writeList(wb, lists, 1, "ProductColors", new ArrayList<>(colors.activeNames()));
             wb.setSheetHidden(wb.getSheetIndex(lists), true);
 
             // --- In-sheet validation (catches mistakes while typing) ---
@@ -353,6 +356,7 @@ public class ProductImportServiceImpl implements ProductImportService {
             // Read every row first, so a file over the limit is rejected
             // before anything is saved.
             List<ParsedRow> rows = new ArrayList<>();
+            java.util.Set<String> activeColors = new java.util.HashSet<>(colors.activeNames());   // once, not per row
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row == null || isBlank(row, columns, formatter, evaluator)) continue;
@@ -360,7 +364,7 @@ public class ProductImportServiceImpl implements ProductImportService {
                     throw new ProductImportValidationException("الملف يحتوي على أكثر من " + MAX_ROWS + " منتج.",
                             List.of(new ProductImportRowError(i + 1, null, "قسّم الملف إلى أكثر من ملف (الحد الأقصى " + MAX_ROWS + " منتج).")));
                 }
-                rows.add(parseRow(row, i + 1, columns, formatter, evaluator));
+                rows.add(parseRow(row, i + 1, columns, formatter, evaluator, activeColors));
             }
             if (rows.isEmpty()) {
                 throw new ProductImportValidationException("الملف لا يحتوي على أي منتجات.",
@@ -586,7 +590,8 @@ public class ProductImportServiceImpl implements ProductImportService {
     }
 
     /** Reads a row leniently: invalid values are cleared and noted, never rejected. */
-    private ParsedRow parseRow(Row row, int rowNumber, Map<Col, Integer> cols, DataFormatter f, FormulaEvaluator ev) {
+    private ParsedRow parseRow(Row row, int rowNumber, Map<Col, Integer> cols, DataFormatter f, FormulaEvaluator ev,
+                               java.util.Set<String> activeColors) {
         ParsedRow r = new ParsedRow();
         r.rowNumber = rowNumber;
 
@@ -602,7 +607,15 @@ public class ProductImportServiceImpl implements ProductImportService {
             r.type = itemTypes.resolve(typeRaw).orElse(null);
             if (r.type == null) note(r, Col.TYPE, "غير موجود في القائمة", typeRaw);
         }
-        r.color = catalogValue(r, row, cols, Col.COLOR, ProductCatalog.COLORS, f, ev);
+        String colorRaw = text(row, cols, Col.COLOR, f, ev);
+        if (!colorRaw.isEmpty()) {
+            String c = ProductColorService.canonical(colorRaw);
+            r.color = activeColors.contains(c) ? c : null;
+            if (r.color == null) {
+                note(r, Col.COLOR, "غير موجود في القائمة", colorRaw);
+                r.invalidColor = true;
+            }
+        }
         // Size is free text; only a value too long for the column is
         // blanked, and the row then goes to the drafts like a bad colour.
         String sizeRaw = text(row, cols, Col.SIZE, f, ev);
@@ -663,18 +676,6 @@ public class ProductImportServiceImpl implements ProductImportService {
         r.purchasePrice = cost == null ? null : cost.setScale(2, RoundingMode.HALF_UP);
         r.profitPercentage = profit == null ? null : profit.setScale(2, RoundingMode.HALF_UP);
         r.sellingPrice = selling == null ? null : selling.setScale(2, RoundingMode.HALF_UP);
-    }
-
-    private String catalogValue(ParsedRow r, Row row, Map<Col, Integer> cols, Col col, Map<String, String> catalog,
-                                DataFormatter f, FormulaEvaluator ev) {
-        String raw = text(row, cols, col, f, ev);
-        if (raw.isEmpty()) return null;
-        return ProductCatalog.resolve(catalog, raw).orElseGet(() -> {
-            note(r, col, "غير موجود في القائمة", raw);
-            if (col == Col.COLOR) r.invalidColor = true;
-            if (col == Col.SIZE) r.invalidSize = true;
-            return null;
-        });
     }
 
     /** A blank cell is null (not given); otherwise a whole number between 0 and max. */

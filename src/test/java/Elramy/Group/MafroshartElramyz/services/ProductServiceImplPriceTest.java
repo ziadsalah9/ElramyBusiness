@@ -29,7 +29,7 @@ class ProductServiceImplPriceTest {
     @BeforeEach
     void setUp() {
         productRepository = mock(ProductRepository.class);
-        service = new ProductServiceImpl(productRepository, mock(ProductVariantRepository.class), mock(StockTransactionRepository.class), mock(StockService.class), new ProductMapper(), mock(Elramy.Group.MafroshartElramyz.activity.ActivityLogService.class), Elramy.Group.MafroshartElramyz.producttype.TestItemTypes.mock());
+        service = new ProductServiceImpl(productRepository, mock(ProductVariantRepository.class), mock(StockTransactionRepository.class), mock(StockService.class), new ProductMapper(), mock(Elramy.Group.MafroshartElramyz.activity.ActivityLogService.class), Elramy.Group.MafroshartElramyz.producttype.TestItemTypes.mock(), Elramy.Group.MafroshartElramyz.productcolor.TestColors.mock());
         product = Product.builder().id(7L).code("PRD-7").name("لحاف").itemType("لحاف")
                 .active(true).build();
         when(productRepository.findById(7L)).thenReturn(Optional.of(product));
