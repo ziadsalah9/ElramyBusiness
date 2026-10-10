@@ -42,8 +42,9 @@ class ReportServiceTest {
         Elramy.Group.MafroshartElramyz.expense.ExpenseRepository expenses = mock(Elramy.Group.MafroshartElramyz.expense.ExpenseRepository.class);
         Elramy.Group.MafroshartElramyz.installment.InstallmentRepository plans = mock(Elramy.Group.MafroshartElramyz.installment.InstallmentRepository.class);
         when(plans.sumAllMarkup()).thenReturn(BigDecimal.ZERO);
+        Elramy.Group.MafroshartElramyz.repository.CashClosingRepository closings = mock(Elramy.Group.MafroshartElramyz.repository.CashClosingRepository.class);
         ReportService service = new ReportService(invoices, returns, payments, purchases, products,
-                mock(StockTransactionRepository.class), stocktakes, expenses, plans);
+                mock(StockTransactionRepository.class), stocktakes, expenses, plans, closings);
         when(expenses.findByExpenseDateBetweenOrderByExpenseDateDescIdDesc(any(), any())).thenReturn(List.of(
                 Elramy.Group.MafroshartElramyz.expense.Expense.builder().category(Elramy.Group.MafroshartElramyz.expense.ExpenseCategory.RENT)
                         .amount(new BigDecimal("12")).build()));
@@ -72,6 +73,11 @@ class ReportServiceTest {
         when(payments.sumAll()).thenReturn(new BigDecimal("20"));
         when(products.findAll()).thenReturn(List.of());
 
+        // The drawer was counted 5 short of what was expected that day.
+        when(closings.findByClosingDateBetweenOrderByClosingDateAsc(any(), any())).thenReturn(List.of(
+                Elramy.Group.MafroshartElramyz.models.CashClosing.builder().closingDate(day).countedTotal(new BigDecimal("25"))
+                        .cashSalesTotal(new BigDecimal("30")).difference(new BigDecimal("-5")).build()));
+
         Report r = service.build(day, day);
         Summary s = r.summary();
 
@@ -90,6 +96,21 @@ class ReportServiceTest {
         assertEquals(1, r.topProducts().get(0).quantity());
         assertEquals(1, r.days().size());
         eq("30", r.days().get(0).profit());
+
+        ReportDtos.CashEarnings ce = r.cashEarnings();
+        assertEquals(1, ce.closings());
+        eq("25", ce.countedTotal());
+        eq("-5", ce.difference());
+        eq("18", ce.netProfit());
+        eq("13", ce.actualNetProfit());   // net profit 18 - 5 short in the drawer
+        assertTrue(ce.unclosedDays().isEmpty());
+
+        // Same sales, but nobody closed the cash that day.
+        when(closings.findByClosingDateBetweenOrderByClosingDateAsc(any(), any())).thenReturn(List.of());
+        ReportDtos.CashEarnings open = service.build(day, day).cashEarnings();
+        assertEquals(List.of(day), open.unclosedDays());
+        eq("18", open.actualNetProfit());
+        assertEquals(s.netProfit(), service.summary(day, day).netProfit(), "summary-only gives the same totals");
     }
 
     @Test
@@ -97,7 +118,8 @@ class ReportServiceTest {
         ReportService service = new ReportService(mock(SalesInvoiceRepository.class), mock(SalesReturnRepository.class),
                 mock(CustomerPaymentRepository.class), mock(PurchaseInvoiceRepository.class), mock(ProductRepository.class),
                 mock(StockTransactionRepository.class), mock(StocktakeRepository.class), mock(Elramy.Group.MafroshartElramyz.expense.ExpenseRepository.class),
-                mock(Elramy.Group.MafroshartElramyz.installment.InstallmentRepository.class));
+                mock(Elramy.Group.MafroshartElramyz.installment.InstallmentRepository.class),
+                mock(Elramy.Group.MafroshartElramyz.repository.CashClosingRepository.class));
         assertThrows(IllegalArgumentException.class, () -> service.build(LocalDate.of(2026, 2, 1), LocalDate.of(2026, 1, 1)));
         assertThrows(IllegalArgumentException.class, () -> service.build(LocalDate.of(2025, 1, 1), LocalDate.of(2026, 1, 2)));
     }

@@ -53,8 +53,18 @@ public class ReportService {
     private final StocktakeRepository stocktakes;
     private final Elramy.Group.MafroshartElramyz.expense.ExpenseRepository expenseRepository;
     private final Elramy.Group.MafroshartElramyz.installment.InstallmentRepository installmentPlans;
+    private final Elramy.Group.MafroshartElramyz.repository.CashClosingRepository cashClosings;
+
+    /** Totals only (sales, cost, profit, expenses) for a range - no product lists. */
+    public Summary summary(LocalDate from, LocalDate to) {
+        return build(from, to, false).summary();
+    }
 
     public Report build(LocalDate from, LocalDate to) {
+        return build(from, to, true);
+    }
+
+    private Report build(LocalDate from, LocalDate to, boolean full) {
         if (to.isBefore(from)) throw new IllegalArgumentException("تاريخ النهاية قبل تاريخ البداية.");
         if (ChronoUnit.DAYS.between(from, to) >= MAX_DAYS) throw new IllegalArgumentException("أقصى مدة للتقرير سنة واحدة.");
         LocalDateTime start = from.atStartOfDay();
@@ -139,6 +149,7 @@ public class ReportService {
 
         Summary summary = new Summary(sold.size(), m(gross), m(discounts), m(returned), m(net), m(cost), m(profit), margin,
                 m(cash), m(paidLater), m(bought), m(outstanding.max(BigDecimal.ZERO)), missingCost, m(spent), m(profit.subtract(spent)));
+        if (!full) return new Report(from, to, summary, List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), null);
 
         List<Day> dayList = days.entrySet().stream().map(e -> new Day(e.getKey(), e.getValue().invoices, m(e.getValue().sales),
                 m(e.getValue().returns), m(e.getValue().sales.subtract(e.getValue().returns)), m(e.getValue().profit))).toList();
@@ -159,7 +170,31 @@ public class ReportService {
                 .sorted(Map.Entry.<Elramy.Group.MafroshartElramyz.expense.ExpenseCategory, ExpenseAcc>comparingByValue(
                         Comparator.comparing((ExpenseAcc a) -> a.amount)).reversed())
                 .map(e -> new ExpenseShare(e.getKey(), e.getValue().count, m(e.getValue().amount))).toList();
-        return new Report(from, to, summary, dayList, top, slowMovers(), methods, counts, expenseShares);
+        return new Report(from, to, summary, dayList, top, slowMovers(), methods, counts, expenseShares,
+                cashEarnings(from, to, dayList, summary.netProfit()));
+    }
+
+    /**
+     * Earnings judged on the cash actually counted: the drawer counted at
+     * each closing in the range against what was expected, and the net
+     * profit corrected by that difference (a shortage lowers the earning, a
+     * surplus raises it). Days with sales but no closing are listed.
+     */
+    private CashEarnings cashEarnings(LocalDate from, LocalDate to, List<Day> days, BigDecimal netProfit) {
+        List<Elramy.Group.MafroshartElramyz.models.CashClosing> closed = cashClosings.findByClosingDateBetweenOrderByClosingDateAsc(from, to);
+        BigDecimal counted = BigDecimal.ZERO, expected = BigDecimal.ZERO, difference = BigDecimal.ZERO;
+        java.util.Set<LocalDate> closedDays = new java.util.HashSet<>();
+        for (var c : closed) {
+            counted = counted.add(c.getCountedTotal());
+            expected = expected.add(c.getCashSalesTotal());
+            difference = difference.add(c.getDifference());
+            closedDays.add(c.getClosingDate());
+        }
+        LocalDate today = LocalDate.now();
+        List<LocalDate> unclosed = days.stream()
+                .filter(d -> d.invoices() > 0 && d.date().isBefore(today) && !closedDays.contains(d.date()))
+                .map(Day::date).toList();
+        return new CashEarnings(closedDays.size(), m(counted), m(expected), m(difference), m(netProfit), m(netProfit.add(difference)), unclosed);
     }
 
     /** Products in stock that have not sold for SLOW_DAYS days (or never), most stock value first. */

@@ -47,8 +47,17 @@ public final class ReportDtos {
     public record ExpenseShare(Elramy.Group.MafroshartElramyz.expense.ExpenseCategory category, int count, BigDecimal amount) {
     }
 
+    /**
+     * Earnings on the cash actually counted at the closings in the range:
+     * counted vs expected, and the net profit corrected by the difference.
+     * {@code unclosedDays}: past days with sales but no cash closing.
+     */
+    public record CashEarnings(int closings, BigDecimal countedTotal, BigDecimal expectedTotal, BigDecimal difference,
+                               BigDecimal netProfit, BigDecimal actualNetProfit, List<LocalDate> unclosedDays) {
+    }
+
     public record Report(LocalDate from, LocalDate to, Summary summary, List<Day> days, List<TopProduct> topProducts,
                          List<SlowMover> slowMovers, List<PaymentShare> paymentMethods, List<StocktakeResult> stocktakes,
-                         List<ExpenseShare> expenses) {
+                         List<ExpenseShare> expenses, CashEarnings cashEarnings) {
     }
 }

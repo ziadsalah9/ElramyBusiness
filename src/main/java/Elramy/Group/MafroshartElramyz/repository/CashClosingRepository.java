@@ -14,4 +14,6 @@ public interface CashClosingRepository extends JpaRepository<CashClosing, Long> 
     List<CashClosing> findByBranchIdOrderByClosingDateDesc(Long branchId);
 
     List<CashClosing> findByClosingDateOrderByBranchNameAsc(LocalDate closingDate);
+
+    List<CashClosing> findByClosingDateBetweenOrderByClosingDateAsc(LocalDate from, LocalDate to);
 }

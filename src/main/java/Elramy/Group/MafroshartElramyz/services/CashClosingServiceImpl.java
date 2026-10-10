@@ -42,6 +42,7 @@ public class CashClosingServiceImpl implements CashClosingService {
     private final CashClosingMapper cashClosingMapper;
     private final UserService userService;
     private final ActivityLogService activityLog;
+    private final Elramy.Group.MafroshartElramyz.reports.ReportService reports;
 
     @Override
     public CashClosingResponse closeCash(CashClosingRequest request) {
@@ -144,7 +145,14 @@ public class CashClosingServiceImpl implements CashClosingService {
                 .orElseThrow(() -> new ResourceNotFoundException("Branch not found with id: " + branchId));
         BigDecimal cashSalesTotal = calculateCashSalesTotal(branchId, date);
         // Empty counts → summary with zeros
-        return new CashClosingSummary(branchId, branch.getName(), cashSalesTotal, BigDecimal.ZERO, BigDecimal.ZERO.subtract(cashSalesTotal) /* nothing counted yet: counted - expected */, 0,0,0,0,0,0);
+        // Profit uses cost prices: only admins see it.
+        CashClosingSummary.DayProfit dayProfit = null;
+        if (userService.getCurrentUser().getRole() == Elramy.Group.MafroshartElramyz.enums.Role.ADMIN) {
+            var s = reports.summary(date, date);
+            dayProfit = new CashClosingSummary.DayProfit(s.netSales(), s.costOfSales(), s.grossProfit(), s.expenses(),
+                    s.netProfit(), s.linesWithoutCost());
+        }
+        return new CashClosingSummary(branchId, branch.getName(), cashSalesTotal, BigDecimal.ZERO, BigDecimal.ZERO.subtract(cashSalesTotal) /* nothing counted yet: counted - expected */, 0,0,0,0,0,0, dayProfit);
     }
 
     @Override

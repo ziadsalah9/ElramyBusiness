@@ -42,7 +42,8 @@ public class CashClosingMapper {
                 closing.getCount20(),
                 closing.getCount50(),
                 closing.getCount100(),
-                closing.getCount200()
+                closing.getCount200(),
+                null
         );
     }
 }

@@ -30,6 +30,7 @@ class CashClosingServiceImplTest {
     private CashClosingRepository closings;
     private UserService users;
     private CashClosingServiceImpl service;
+    private Elramy.Group.MafroshartElramyz.reports.ReportService reports;
     private final LocalDate today = LocalDate.now();
 
     @BeforeEach
@@ -47,7 +48,8 @@ class CashClosingServiceImplTest {
         Elramy.Group.MafroshartElramyz.supplier.SupplierPaymentRepository supplierPays = mock(Elramy.Group.MafroshartElramyz.supplier.SupplierPaymentRepository.class);
         when(expenses.sumByBranchMethodAndDay(anyLong(), any(), any())).thenReturn(BigDecimal.ZERO);
         when(supplierPays.sumByBranchAndMethodBetween(anyLong(), any(), any(), any())).thenReturn(BigDecimal.ZERO);
-        service = new CashClosingServiceImpl(closings, branches, sales, payments, returns, expenses, supplierPays, mock(CashClosingMapper.class), users, mock(ActivityLogService.class));
+        reports = mock(Elramy.Group.MafroshartElramyz.reports.ReportService.class);
+        service = new CashClosingServiceImpl(closings, branches, sales, payments, returns, expenses, supplierPays, mock(CashClosingMapper.class), users, mock(ActivityLogService.class), reports);
 
         Branch branch = Branch.builder().id(1L).name("فرع كوم حماة").build();
         when(branches.findById(1L)).thenReturn(Optional.of(branch));
@@ -90,5 +92,21 @@ class CashClosingServiceImplTest {
 
         service.closeCash(request(today.minusDays(7)));
         assertEquals(0, new BigDecimal("100").compareTo(old.getCountedTotal()));
+    }
+
+    @Test
+    void theDaysProfitIsShownToAdminsOnly() {
+        when(reports.summary(today, today)).thenReturn(new Elramy.Group.MafroshartElramyz.reports.ReportDtos.Summary(
+                3, new BigDecimal("500"), BigDecimal.ZERO, BigDecimal.ZERO, new BigDecimal("500"), new BigDecimal("300"),
+                new BigDecimal("200"), new BigDecimal("40"), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+                0, new BigDecimal("50"), new BigDecimal("150")));
+
+        loginAs(Role.ADMIN);
+        var admin = service.calculateSummary(1L, today).dayProfit();
+        assertEquals(0, new BigDecimal("150").compareTo(admin.netProfit()));
+        assertEquals(0, new BigDecimal("300").compareTo(admin.costOfSales()));
+
+        loginAs(Role.EMPLOYEE);
+        assertNull(service.calculateSummary(1L, today).dayProfit(), "employees never see costs or profit");
     }
 }
