@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -44,6 +43,7 @@ public class ProductServiceImpl implements ProductService {
     private final ActivityLogService activityLog;
     private final Elramy.Group.MafroshartElramyz.producttype.ItemTypeService itemTypes;
     private final Elramy.Group.MafroshartElramyz.productcolor.ProductColorService colors;
+    private final ItemCodes itemCodes;
 
     /** Ledger reference for stock typed in the product form. */
     static final String REFERENCE_PRODUCT_FORM = "PRODUCT_FORM";
@@ -57,7 +57,7 @@ public class ProductServiceImpl implements ProductService {
     public ProductResponse create(CreateProductRequest request) {
 
         Product product = Product.builder()
-                .code(generateProductCode())
+                .code(itemCodes.next())
                 .name(request.name())
                 .model(request.model())
                 .itemType(itemTypes.requireUsable(request.itemType(), null))
@@ -175,9 +175,11 @@ public class ProductServiceImpl implements ProductService {
                         .findFirst()
                         .orElse(null);
                 if (variant == null) {
+                    String code = nextVariantCode(product);
                     variant = ProductVariant.builder()
                             .product(product)
-                            .code(nextVariantCode(product))
+                            .code(code)
+                            .barcode(code)
                             .quantity(0)
                             .active(true)
                             .build();
@@ -190,7 +192,7 @@ public class ProductServiceImpl implements ProductService {
             variant.setSize(size);
             variant.setActive(true);
             if (isNew || reactivated) changes.set("إضافة لون/مقاس", label(color, size));
-            variant = withShortBarcode(variantRepository.save(variant));
+            variant = variantRepository.save(variant);
             keep.add(variant.getId());
             applyWantedQuantity(variant, w.quantity(), w.expectedQuantity(), isNew, changes);
         }
@@ -261,14 +263,15 @@ public class ProductServiceImpl implements ProductService {
                 .findFirst()
                 .orElse(null);
         if (variant == null) {
+            String code = nextVariantCode(product);
             variant = ProductVariant.builder()
                     .product(product).color(c).size(sz)
-                    .code(nextVariantCode(product))
+                    .code(code).barcode(code)
                     .quantity(0).active(true).build();
             product.getVariants().add(variant);
         }
         variant.setActive(true);
-        return ProductMapper.toVariantResponse(withShortBarcode(variantRepository.save(variant)));
+        return ProductMapper.toVariantResponse(variantRepository.save(variant));
     }
 
     @Override
@@ -298,14 +301,15 @@ public class ProductServiceImpl implements ProductService {
         return ProductVariant.builder().color(color).size(size).build().label();
     }
 
-    /** PRD-XXXX-1, -2, ...: the next free suffix for this product. */
+    /**
+     * Code (and barcode) for a new colour/size: the product's own code while
+     * none of its colours/sizes uses it (so a single-colour product has one
+     * code), otherwise a new one. Never a code of another product's item.
+     */
     private String nextVariantCode(Product product) {
-        int n = product.getVariants().size() + 1;
-        String code;
-        do {
-            code = product.getCode() + "-" + n++;
-        } while (variantRepository.existsByCode(code));
-        return code;
+        String own = product.getCode();
+        boolean taken = product.getVariants().stream().anyMatch(v -> own.equals(v.getCode()));
+        return taken || variantRepository.existsByCode(own) ? itemCodes.next() : own;
     }
 
 
@@ -549,41 +553,8 @@ public class ProductServiceImpl implements ProductService {
     // PRIVATE METHODS
     // =========================================================
 
-    private String generateProductCode() {
-
-        String code;
-
-        do {
-
-            code =
-                    "PRD-"
-                            + UUID.randomUUID()
-                            .toString()
-                            .substring(0, 8)
-                            .toUpperCase();
-
-        } while (
-                productRepository.existsByCode(code)
-        );
 
 
-        return code;
-    }
-
-
-    /**
-     * Short barcode for a new colour/size: 100000 + its id (100001, 100002,
-     * ...). Ids never repeat, so neither do these; 6 digits until 99,999
-     * variants. Older 12-digit barcodes are kept as legacy_barcode (V23).
-     */
-    static String shortBarcode(Long variantId) {
-        return String.valueOf(100_000L + variantId);
-    }
-
-    private ProductVariant withShortBarcode(ProductVariant variant) {
-        if (variant.getBarcode() == null) variant.setBarcode(shortBarcode(variant.getId()));
-        return variant;
-    }
 
 
 

@@ -631,18 +631,18 @@ public class PurchaseInvoiceServiceImpl
     }
 
     /**
-     * Excel import: the code is a variant code (PRD-XXXX-2) or, for a
-     * product with exactly one active variant, the product code.
+     * Excel import: the code is a colour/size code (old codes still work)
+     * or, for a product with exactly one active colour/size, the product code.
      */
     private ProductVariant variantByCode(String code) {
         String c = code.trim();
         var byVariant = variantRepository.findByScanCode(c);
         if (byVariant.isPresent()) return activeVariant(byVariant.get().getId());
-        Product product = productRepository.findByCode(c)
+        Product product = productRepository.findByAnyCode(c)
                 .orElseThrow(() -> new ProductNotFoundException(c));
         var active = product.activeVariants();
         if (active.size() != 1) {
-            throw new IllegalArgumentException("المنتج " + c + " له أكثر من لون/مقاس؛ استخدم كود اللون/المقاس (مثل " + c + "-1).");
+            throw new IllegalArgumentException("المنتج " + c + " له أكثر من لون/مقاس؛ استخدم كود اللون/المقاس المطبوع على الملصق.");
         }
         return active.get(0);
     }

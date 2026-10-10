@@ -44,7 +44,7 @@ class ProductVariantSyncTest {
         variants = mock(ProductVariantRepository.class);
         ledger = mock(StockTransactionRepository.class);
         stock = mock(StockService.class);
-        service = new ProductServiceImpl(products, variants, ledger, stock, new ProductMapper(), mock(Elramy.Group.MafroshartElramyz.activity.ActivityLogService.class), Elramy.Group.MafroshartElramyz.producttype.TestItemTypes.mock(), Elramy.Group.MafroshartElramyz.productcolor.TestColors.mock());
+        service = new ProductServiceImpl(products, variants, ledger, stock, new ProductMapper(), mock(Elramy.Group.MafroshartElramyz.activity.ActivityLogService.class), Elramy.Group.MafroshartElramyz.producttype.TestItemTypes.mock(), Elramy.Group.MafroshartElramyz.productcolor.TestColors.mock(), testCodes());
 
         when(products.existsByCode(anyString())).thenReturn(false);
         when(variants.existsByCode(anyString())).thenReturn(false);
@@ -78,10 +78,10 @@ class ProductVariantSyncTest {
         assertEquals(3, p.variants().size());
         assertEquals(List.of("أحمر / صغير", "أصفر / وسط", "كبير"), p.variants().stream().map(x -> x.label()).toList());
         assertEquals(3, p.variants().stream().map(x -> x.code()).distinct().count());
-        assertTrue(p.variants().get(0).code().startsWith(saved.getCode() + "-"));
-        assertTrue(p.variants().stream().allMatch(x -> x.barcode() != null && x.quantity() == 0));
-        // Short barcodes: 100000 + id, unique like the ids (saved variants here get ids 11, 12, 13).
-        assertEquals(List.of("100011", "100012", "100013"), p.variants().stream().map(x -> x.barcode()).toList());
+        // The code is the barcode; the first colour/size shares the product's code.
+        assertTrue(p.variants().stream().allMatch(x -> x.code().equals(x.barcode()) && x.quantity() == 0));
+        assertEquals(saved.getCode(), p.variants().get(0).code());
+        assertEquals(List.of("K00001", "K00002", "K00003"), p.variants().stream().map(x -> x.code()).toList());
         assertEquals(0, p.quantity());
     }
 
@@ -196,18 +196,21 @@ class ProductVariantSyncTest {
     }
 
     @Test
-    void lookupFindsByCodeBarcodeOrAnOldPrintedBarcode() {
+    void lookupFindsByCodeTypedLooselyOrAnyOldPrintedCode() {
         create(v(null, "أحمر", "صغير"));
         ProductVariant red = saved.getVariants().get(0);
-        when(variants.findByScanCode(anyString())).thenCallRealMethod();   // code -> barcode -> legacy barcode
+        when(variants.findByScanCode(anyString())).thenCallRealMethod();   // code/barcode, then old codes (aliases)
         when(variants.findByCode(anyString())).thenReturn(Optional.empty());
         when(variants.findByBarcode(anyString())).thenReturn(Optional.empty());
-        when(variants.findByLegacyBarcode(anyString())).thenReturn(Optional.empty());
-        when(variants.findByBarcode("100011")).thenReturn(Optional.of(red));
-        when(variants.findByLegacyBarcode("200793466870")).thenReturn(Optional.of(red));
+        when(variants.findByAlias(anyString())).thenReturn(Optional.empty());
+        when(variants.findByCode("K10010")).thenReturn(Optional.of(red));
+        when(variants.findByAlias("100011")).thenReturn(Optional.of(red));
+        when(variants.findByAlias("200793466870")).thenReturn(Optional.of(red));
 
-        var found = service.lookupVariant(" 100011 ");
+        var found = service.lookupVariant(" K10010 ");
         assertEquals(red.getId(), found.variant().id());
+        assertEquals(red.getId(), service.lookupVariant("k1oo1o").variant().id(), "lower case, O typed for 0");
+        assertEquals(red.getId(), service.lookupVariant("100011").variant().id(), "labels printed before V27 still scan");
         assertEquals(red.getId(), service.lookupVariant("200793466870").variant().id(), "labels printed before V23 still scan");
         assertEquals("لحاف", found.product().name());
         verify(ledger, never()).existsByVariantId(anyLong());
@@ -283,5 +286,13 @@ class ProductVariantSyncTest {
         service.update(1L, new UpdateProductRequest("لحاف تعديل", null, "لحاف", 5,
                 List.of(new ProductVariantRequest(red.getId(), "أحمر", "صغير", null, null))));
         verifyNoInteractions(stock);
+    }
+
+    /** Codes like the database's: K00001, K00002, ... (only uniqueness matters here). */
+    static ItemCodes testCodes() {
+        ItemCodes codes = mock(ItemCodes.class);
+        java.util.concurrent.atomic.AtomicInteger n = new java.util.concurrent.atomic.AtomicInteger();
+        when(codes.next()).thenAnswer(inv -> String.format("K%05d", n.incrementAndGet()));
+        return codes;
     }
 }

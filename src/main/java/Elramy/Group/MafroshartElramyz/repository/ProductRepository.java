@@ -34,6 +34,24 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     List<Product> search(@Param("keyword") String keyword);
     Optional<Product> findByCode(String code);
 
+    /** A code the product had before (V27 aliases, e.g. PRD-7AF6C483). */
+    @Query(value = "SELECT p.* FROM products p JOIN item_code_aliases a ON a.product_id = p.id WHERE a.code = :code",
+            nativeQuery = true)
+    Optional<Product> findByAlias(@Param("code") String code);
+
+    /** A product by its code, typed in any case, or by a code it had before. */
+    default Optional<Product> findByAnyCode(String code) {
+        for (String c : Elramy.Group.MafroshartElramyz.services.ItemCodes.candidates(code)) {
+            Optional<Product> p = findByCode(c);
+            if (p.isPresent()) return p;
+        }
+        for (String c : Elramy.Group.MafroshartElramyz.services.ItemCodes.candidates(code)) {
+            Optional<Product> p = findByAlias(c);
+            if (p.isPresent()) return p;
+        }
+        return Optional.empty();
+    }
+
 
     // Low stock is judged on the product total across its active variants.
     // Soft-deleted products are excluded, or they would warn forever.

@@ -378,7 +378,7 @@ public class StocktakeService {
                     invalid.add(where + ": " + (code.isEmpty() ? "الكود فارغ" : "الكمية «" + raw + "» غير صحيحة"));
                     continue;
                 }
-                ProductVariant v = byCode.computeIfAbsent(code, c -> variants.findByCode(c).orElse(null));
+                ProductVariant v = byCode.computeIfAbsent(code, c -> variants.findByScanCode(c).orElse(null));
                 if (v == null) {
                     unknown.add(where);
                     continue;

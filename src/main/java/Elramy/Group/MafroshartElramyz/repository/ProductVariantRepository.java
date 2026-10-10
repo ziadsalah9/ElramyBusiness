@@ -18,11 +18,26 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
 
     boolean existsByCode(String code);
 
-    Optional<ProductVariant> findByLegacyBarcode(String legacyBarcode);
+    /** A code or barcode the item had before (V27 aliases: PRD-…, 100001, 12-digit barcodes). */
+    @Query(value = "SELECT v.* FROM product_variants v JOIN item_code_aliases a ON a.variant_id = v.id WHERE a.code = :code",
+            nativeQuery = true)
+    Optional<ProductVariant> findByAlias(@Param("code") String code);
 
-    /** What a scanner or a typed code finds: the code, the barcode, or an old (pre-V23) barcode. */
+    /**
+     * What a scanner or a typed code finds: the current code/barcode
+     * (typed in any case, O/I/L read as 0/1) or any older code or barcode,
+     * so labels printed before still work.
+     */
     default Optional<ProductVariant> findByScanCode(String code) {
-        return findByCode(code).or(() -> findByBarcode(code)).or(() -> findByLegacyBarcode(code));
+        for (String c : Elramy.Group.MafroshartElramyz.services.ItemCodes.candidates(code)) {
+            Optional<ProductVariant> v = findByCode(c).or(() -> findByBarcode(c));
+            if (v.isPresent()) return v;
+        }
+        for (String c : Elramy.Group.MafroshartElramyz.services.ItemCodes.candidates(code)) {
+            Optional<ProductVariant> v = findByAlias(c);
+            if (v.isPresent()) return v;
+        }
+        return Optional.empty();
     }
 
 

@@ -29,7 +29,7 @@ class ProductServiceImplPriceTest {
     @BeforeEach
     void setUp() {
         productRepository = mock(ProductRepository.class);
-        service = new ProductServiceImpl(productRepository, mock(ProductVariantRepository.class), mock(StockTransactionRepository.class), mock(StockService.class), new ProductMapper(), mock(Elramy.Group.MafroshartElramyz.activity.ActivityLogService.class), Elramy.Group.MafroshartElramyz.producttype.TestItemTypes.mock(), Elramy.Group.MafroshartElramyz.productcolor.TestColors.mock());
+        service = new ProductServiceImpl(productRepository, mock(ProductVariantRepository.class), mock(StockTransactionRepository.class), mock(StockService.class), new ProductMapper(), mock(Elramy.Group.MafroshartElramyz.activity.ActivityLogService.class), Elramy.Group.MafroshartElramyz.producttype.TestItemTypes.mock(), Elramy.Group.MafroshartElramyz.productcolor.TestColors.mock(), testCodes());
         product = Product.builder().id(7L).code("PRD-7").name("لحاف").itemType("لحاف")
                 .active(true).build();
         when(productRepository.findById(7L)).thenReturn(Optional.of(product));
@@ -101,5 +101,13 @@ class ProductServiceImplPriceTest {
         assertThrows(PriceNotFoundException.class, () -> service.getPrice(7L));
         service.setPrice(7L, new CreateProductPriceRequest(bd("1000"), bd("10"), null));
         assertEquals(0, bd("1100.00").compareTo(service.getPrice(7L).sellingPrice()));
+    }
+
+    /** Codes like the database's: K00001, K00002, ... (only uniqueness matters here). */
+    static ItemCodes testCodes() {
+        ItemCodes codes = mock(ItemCodes.class);
+        java.util.concurrent.atomic.AtomicInteger n = new java.util.concurrent.atomic.AtomicInteger();
+        when(codes.next()).thenAnswer(inv -> String.format("K%05d", n.incrementAndGet()));
+        return codes;
     }
 }
