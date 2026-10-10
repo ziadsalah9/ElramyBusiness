@@ -36,4 +36,9 @@ public class StoreSettings extends BaseEntity {
     /** Largest discount (percent of the invoice before discounts) an employee may give. */
     @Column(nullable = false, precision = 5, scale = 2)
     private BigDecimal employeeMaxDiscountPercent;
+
+    /** Days after the purchase to return or exchange (printed on the receipt); 0 = no policy (V28). */
+    @Builder.Default
+    @Column(name = "return_policy_days", nullable = false)
+    private Integer returnPolicyDays = 7;
 }

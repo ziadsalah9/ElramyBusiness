@@ -42,6 +42,9 @@ public class StoreSettingsService {
                 .add("العنوان", s.getAddress(), blank(dto.address()))
                 .add("تذييل الإيصال", s.getReceiptFooter(), blank(dto.receiptFooter()))
                 .add("حد خصم الموظف %", s.getEmployeeMaxDiscountPercent(), pct);
+        int days = dto.returnPolicyDays() != null ? dto.returnPolicyDays() : s.getReturnPolicyDays();
+        changes.add("مدة الاسترجاع والاستبدال (يوم)", s.getReturnPolicyDays(), days);
+        s.setReturnPolicyDays(days);
         s.setStoreName(dto.storeName().trim());
         s.setPhone(blank(dto.phone()));
         s.setAddress(blank(dto.address()));
@@ -61,7 +64,8 @@ public class StoreSettingsService {
     }
 
     private static StoreSettingsDto toDto(StoreSettings s) {
-        return new StoreSettingsDto(s.getStoreName(), s.getPhone(), s.getAddress(), s.getReceiptFooter(), s.getEmployeeMaxDiscountPercent());
+        return new StoreSettingsDto(s.getStoreName(), s.getPhone(), s.getAddress(), s.getReceiptFooter(), s.getEmployeeMaxDiscountPercent(),
+                s.getReturnPolicyDays());
     }
 
     private static String blank(String v) {
