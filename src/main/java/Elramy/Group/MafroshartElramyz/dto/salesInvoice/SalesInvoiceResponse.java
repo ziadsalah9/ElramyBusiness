@@ -43,7 +43,10 @@ public record SalesInvoiceResponse(
         BigDecimal cashAmount,
 
         /** Value already returned. */
-        BigDecimal returnedTotal
+        BigDecimal returnedTotal,
+
+        /** The invoice discount as entered in percent; null when entered as an amount. */
+        BigDecimal discountPercent
 
 ) {
 }

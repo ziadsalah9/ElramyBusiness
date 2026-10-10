@@ -35,6 +35,10 @@ public class SalesInvoice extends BaseEntity {
     @Builder.Default
     private BigDecimal discount = BigDecimal.ZERO;
 
+    /** The percentage the invoice discount was computed from; null when entered as an amount (V26). */
+    @Column(name = "discount_percent", precision = 5, scale = 2)
+    private BigDecimal discountPercent;
+
     @Column(nullable = false)
     private BigDecimal total;
 

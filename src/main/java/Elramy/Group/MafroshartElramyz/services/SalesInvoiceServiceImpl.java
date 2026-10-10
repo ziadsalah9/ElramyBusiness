@@ -141,8 +141,10 @@ public class SalesInvoiceServiceImpl
         // INVOICE DISCOUNT
         // =========================================================
 
+        // A percentage is turned into an amount once the items total is
+        // known (below); the amount is what every total and report uses.
         BigDecimal invoiceDiscount =
-                request.discount() != null
+                request.discountPercent() == null && request.discount() != null
                         ? request.discount()
                         : BigDecimal.ZERO;
 
@@ -277,6 +279,12 @@ public class SalesInvoiceServiceImpl
         // CALCULATE INVOICE TOTAL
         // =========================================================
 
+        if (request.discountPercent() != null) {
+            invoiceDiscount = percentOf(subtotal, request.discountPercent());
+            invoice.setDiscount(invoiceDiscount);
+            invoice.setDiscountPercent(request.discountPercent().setScale(2, java.math.RoundingMode.HALF_UP));
+        }
+
         BigDecimal total =
                 subtotal.subtract(invoiceDiscount)
                         .setScale(2, java.math.RoundingMode.HALF_UP);
@@ -409,6 +417,7 @@ public class SalesInvoiceServiceImpl
                 invoiceLines(invoice.getItems().stream()
                         .map(i -> lineText(i.getProduct().getName(), i.getVariant(), i.getQuantity(), i.getTotal())).toList())
                         .set("الخصم", invoice.getDiscount())
+                        .set("نسبة الخصم %", invoice.getDiscountPercent())
                         .set("المدفوع", invoice.getPaid())
                         .set("المتبقي", invoice.getTotal().subtract(invoice.getPaid()))
                         .set("طريقة الدفع", invoice.getPaymentMethod()));
@@ -602,5 +611,13 @@ public class SalesInvoiceServiceImpl
     static String lineText(String product, ProductVariant variant, Integer qty, BigDecimal total) {
         String v = variant != null && !variant.label().equals("بدون لون أو مقاس") ? " (" + variant.label() + ")" : "";
         return product + v + " × " + qty + " = " + (total != null ? total.stripTrailingZeros().toPlainString() : "-");
+    }
+
+    /**
+     * {@code percent}% of {@code amount}, to the piastre (half up). The
+     * frontend shows the same figure with whole-piastre integer maths.
+     */
+    static BigDecimal percentOf(BigDecimal amount, BigDecimal percent) {
+        return amount.multiply(percent).divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
     }
 }

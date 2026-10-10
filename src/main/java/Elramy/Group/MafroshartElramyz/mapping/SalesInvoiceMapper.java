@@ -86,7 +86,9 @@ public class SalesInvoiceMapper {
                 // 16 - cashAmount
                 invoice.getCashAmount(),
                 // 17 - returnedTotal
-                invoice.getReturnedTotal()
+                invoice.getReturnedTotal(),
+                // 18 - discountPercent
+                invoice.getDiscountPercent()
         );
     }
 

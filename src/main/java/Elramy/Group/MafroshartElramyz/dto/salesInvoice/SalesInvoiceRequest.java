@@ -43,13 +43,30 @@ public record SalesInvoiceRequest(
 
         /** Sell on installments (ADMIN): what is not paid now becomes a monthly plan. */
         @Valid
-        Elramy.Group.MafroshartElramyz.installment.InstallmentDtos.InstallmentRequest installment
+        Elramy.Group.MafroshartElramyz.installment.InstallmentDtos.InstallmentRequest installment,
+
+        /**
+         * Invoice discount as a percentage of the items total (after line
+         * discounts). When given, the server computes the amount from it and
+         * {@code discount} is ignored.
+         */
+        @DecimalMin(value = "0.0", message = "نسبة الخصم لا يمكن أن تكون سالبة")
+        @jakarta.validation.constraints.DecimalMax(value = "100.0", message = "نسبة الخصم لا يمكن أن تزيد عن 100%")
+        @jakarta.validation.constraints.Digits(integer = 3, fraction = 2, message = "نسبة الخصم: رقمان عشريان على الأكثر")
+        BigDecimal discountPercent
 
 ) {
 
     public SalesInvoiceRequest(Long branchId, CustomerInvoiceRequest customer, PaymentMethod paymentMethod,
                                List<SalesInvoiceItemRequest> items, BigDecimal discount, BigDecimal paid, String notes,
                                BigDecimal cashAmount) {
-        this(branchId, customer, paymentMethod, items, discount, paid, notes, cashAmount, null);
+        this(branchId, customer, paymentMethod, items, discount, paid, notes, cashAmount, null, null);
+    }
+
+    public SalesInvoiceRequest(Long branchId, CustomerInvoiceRequest customer, PaymentMethod paymentMethod,
+                               List<SalesInvoiceItemRequest> items, BigDecimal discount, BigDecimal paid, String notes,
+                               BigDecimal cashAmount,
+                               Elramy.Group.MafroshartElramyz.installment.InstallmentDtos.InstallmentRequest installment) {
+        this(branchId, customer, paymentMethod, items, discount, paid, notes, cashAmount, installment, null);
     }
 }

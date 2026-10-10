@@ -141,6 +141,39 @@ class SalesInvoiceServiceImplTest {
         assertDoesNotThrow(() -> service.create(sale(PaymentMethod.CASH, "100", "0", null, item(11L, 2, "50"))));
     }
 
+    private static SalesInvoiceRequest salePercent(String percent, String ignoredAmount, String paid, SalesInvoiceItemRequest... items) {
+        return new SalesInvoiceRequest(1L, new CustomerInvoiceRequest("محمد", "010", null), PaymentMethod.CASH, List.of(items),
+                new BigDecimal(ignoredAmount), new BigDecimal(paid), null, null, null, new BigDecimal(percent));
+    }
+
+    @Test
+    void aPercentDiscountIsComputedByTheServerFromTheItemsTotalAfterLineDiscounts() {
+        // items: 2 x 100 - 10 = 190, + 50 = 240; 12.5% of 240 = 30; the sent amount (999) is ignored.
+        service.create(salePercent("12.5", "999", "210", item(11L, 2, "10"), item(12L, 1, "0")));
+        SalesInvoice inv = saved();
+        assertEquals(0, new BigDecimal("30").compareTo(inv.getDiscount()));
+        assertEquals(0, new BigDecimal("12.50").compareTo(inv.getDiscountPercent()));
+        assertEquals(0, new BigDecimal("210").compareTo(inv.getTotal()));
+    }
+
+    @Test
+    void percentRoundsHalfUpToThePiastreAndAnAmountDiscountKeepsNoPercent() {
+        // 7.3% of 123.45 = 9.01185 -> 9.01
+        assertEquals(new BigDecimal("9.01"), SalesInvoiceServiceImpl.percentOf(new BigDecimal("123.45"), new BigDecimal("7.3")));
+        // 2.5% of 0.20 = 0.005 -> 0.01 (half up)
+        assertEquals(new BigDecimal("0.01"), SalesInvoiceServiceImpl.percentOf(new BigDecimal("0.20"), new BigDecimal("2.5")));
+
+        service.create(sale(PaymentMethod.CASH, "20", "0", null, item(11L, 1, "0")));
+        assertNull(saved().getDiscountPercent());
+    }
+
+    @Test
+    void employeeLimitAppliesToAPercentDiscountToo() {
+        when(users.getCurrentUser()).thenReturn(employee);
+        assertDoesNotThrow(() -> service.create(salePercent("10", "0", "0", item(11L, 2, "0"))));     // 20 of 200: the limit
+        assertThrows(IllegalArgumentException.class, () -> service.create(salePercent("10.5", "0", "0", item(11L, 2, "0"))));
+    }
+
     @Test
     void aHiddenCustomerWhoBuysAgainIsRestored() {
         Customer hidden = Customer.builder().id(6L).name("قديم").phone("011").active(false).build();
