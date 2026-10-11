@@ -26,8 +26,18 @@ public class SalesInvoiceItem extends BaseEntity {
     @JoinColumn(name = "product_id")
     private Product product;
 
+    // The exact colour/size sold or bought (V11).
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "variant_id")
+    private ProductVariant variant;
+
     @Column(nullable = false)
     private Integer quantity;
+
+    /** Pieces of this line already returned (V16). */
+    @Builder.Default
+    @Column(nullable = false)
+    private Integer returnedQuantity = 0;
 
     @Column(nullable = false)
     private BigDecimal unitPrice;

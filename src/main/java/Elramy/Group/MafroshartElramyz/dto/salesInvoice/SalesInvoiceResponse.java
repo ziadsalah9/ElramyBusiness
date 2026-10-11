@@ -1,0 +1,52 @@
+package Elramy.Group.MafroshartElramyz.dto.salesInvoice;
+
+import Elramy.Group.MafroshartElramyz.enums.PaymentMethod;
+import Elramy.Group.MafroshartElramyz.dto.customer.CustomerResponse;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+
+public record SalesInvoiceResponse(
+
+        Long id,
+
+        CustomerResponse customer,
+
+        String invoiceNumber,
+
+        Long branchId,
+
+        String branchName,
+
+        Long cashierId,
+
+        String cashierName,
+
+        List<SalesInvoiceItemResponse> items,
+
+        BigDecimal discount,
+
+        BigDecimal total,
+
+        BigDecimal paid,
+
+        BigDecimal remaining,
+
+        PaymentMethod paymentMethod,
+
+        String notes,
+
+        LocalDateTime createdAt,
+
+        /** Cash part of {@code paid}; null when unknown (old MIXED invoices). */
+        BigDecimal cashAmount,
+
+        /** Value already returned. */
+        BigDecimal returnedTotal,
+
+        /** The invoice discount as entered in percent; null when entered as an amount. */
+        BigDecimal discountPercent
+
+) {
+}

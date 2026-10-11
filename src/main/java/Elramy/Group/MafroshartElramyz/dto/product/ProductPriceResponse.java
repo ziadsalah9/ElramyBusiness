@@ -1,0 +1,23 @@
+package Elramy.Group.MafroshartElramyz.dto.product;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+public record ProductPriceResponse(
+
+        Long id,
+
+        Long productId,
+
+        BigDecimal purchasePrice,
+
+        BigDecimal sellingPrice,
+
+        BigDecimal profitPercentage,
+
+
+        Boolean active,
+
+        LocalDateTime createdAt
+
+) {}

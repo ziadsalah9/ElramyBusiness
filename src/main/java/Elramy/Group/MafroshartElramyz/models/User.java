@@ -26,6 +26,9 @@ public class User extends BaseEntity {
     @Column(nullable = false)
     private String fullName;
 
+    /** Last password or username change; older tokens are rejected (V17). */
+    private java.time.LocalDateTime credentialsChangedAt;
+
 
 
     @Enumerated(EnumType.STRING)

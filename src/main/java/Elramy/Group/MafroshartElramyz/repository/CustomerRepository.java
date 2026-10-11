@@ -11,4 +11,6 @@ public interface CustomerRepository
     Optional<Customer> findByPhone(String phone);
 
     boolean existsByPhone(String phone);
+
+    long countByActiveTrue();
 }

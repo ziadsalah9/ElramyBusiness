@@ -1,8 +1,8 @@
 package Elramy.Group.MafroshartElramyz.mapping;
 
 
-import Elramy.Group.MafroshartElramyz.enums.purchaseInvoice.PurchaseInvoiceItemResponse;
-import Elramy.Group.MafroshartElramyz.enums.purchaseInvoice.PurchaseInvoiceResponse;
+import Elramy.Group.MafroshartElramyz.dto.purchaseInvoice.PurchaseInvoiceItemResponse;
+import Elramy.Group.MafroshartElramyz.dto.purchaseInvoice.PurchaseInvoiceResponse;
 import Elramy.Group.MafroshartElramyz.models.PurchaseInvoice;
 import Elramy.Group.MafroshartElramyz.models.PurchaseInvoiceItem;
 import org.springframework.stereotype.Component;
@@ -53,7 +53,9 @@ public class PurchaseInvoiceMapper {
                         .map(this::toItemResponse)
                         .toList(),
 
-                invoice.getCreatedAt()
+                invoice.getCreatedAt(),
+                invoice.getSupplier() != null ? invoice.getSupplier().getId() : null,
+                invoice.getSupplier() != null ? invoice.getSupplier().getName() : null
         );
     }
 
@@ -76,7 +78,15 @@ public class PurchaseInvoiceMapper {
 
                 item.getDiscount(),
 
-                item.getTotal()
+                item.getTotal(),
+
+                item.getVariant() != null ? item.getVariant().getId() : null,
+
+                item.getVariant() != null ? item.getVariant().getCode() : null,
+
+                item.getVariant() != null ? item.getVariant().getColor() : null,
+
+                item.getVariant() != null ? item.getVariant().getSize() : null
         );
     }
 }

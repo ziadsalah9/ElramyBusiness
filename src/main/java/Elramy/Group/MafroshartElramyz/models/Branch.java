@@ -32,7 +32,4 @@ public class Branch extends BaseEntity {
     @OneToMany(mappedBy = "branch")
     private List<User> users = new ArrayList<>();
 
-    @OneToMany(mappedBy = "branch")
-    private List<ProductStock> stocks = new ArrayList<>();
-
 }

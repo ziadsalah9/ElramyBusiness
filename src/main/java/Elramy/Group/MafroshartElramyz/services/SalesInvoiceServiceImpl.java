@@ -1,14 +1,23 @@
 package Elramy.Group.MafroshartElramyz.services;
 
 
+import Elramy.Group.MafroshartElramyz.activity.ActivityAction;
+import Elramy.Group.MafroshartElramyz.activity.ActivityEntity;
+import Elramy.Group.MafroshartElramyz.activity.ActivityLogService;
+import Elramy.Group.MafroshartElramyz.activity.Changes;
 import Elramy.Group.MafroshartElramyz.enums.Role;
+import Elramy.Group.MafroshartElramyz.enums.PaymentMethod;
 import Elramy.Group.MafroshartElramyz.enums.TransactionType;
-import Elramy.Group.MafroshartElramyz.enums.salesInvoice.SalesInvoiceItemRequest;
-import Elramy.Group.MafroshartElramyz.enums.salesInvoice.SalesInvoiceRequest;
-import Elramy.Group.MafroshartElramyz.enums.salesInvoice.SalesInvoiceResponse;
+import Elramy.Group.MafroshartElramyz.dto.salesInvoice.SalesInvoiceItemRequest;
+import Elramy.Group.MafroshartElramyz.dto.salesInvoice.SalesInvoiceRequest;
+import Elramy.Group.MafroshartElramyz.dto.salesInvoice.SalesInvoiceResponse;
 import Elramy.Group.MafroshartElramyz.exception.BranchAccessDeniedException;
+import Elramy.Group.MafroshartElramyz.exception.BranchNotFoundException;
 import Elramy.Group.MafroshartElramyz.exception.CustomerPhoneNotFoundException;
+import Elramy.Group.MafroshartElramyz.exception.PriceNotFoundException;
 import Elramy.Group.MafroshartElramyz.exception.ProductNotFoundException;
+import Elramy.Group.MafroshartElramyz.exception.ResourceNotFoundException;
+import Elramy.Group.MafroshartElramyz.exception.SalesInvoiceNotFoundException;
 import Elramy.Group.MafroshartElramyz.mapping.SalesInvoiceMapper;
 import Elramy.Group.MafroshartElramyz.models.*;
 import Elramy.Group.MafroshartElramyz.repository.*;
@@ -29,13 +38,16 @@ public class SalesInvoiceServiceImpl
 
     private final SalesInvoiceRepository salesInvoiceRepository;
     private final ProductRepository productRepository;
-    private final ProductPriceRepository productPriceRepository;
+    private final ProductVariantRepository variantRepository;
     private final BranchRepository branchRepository;
 
     private final StockService stockService;
     private final SalesInvoiceMapper salesInvoiceMapper;
     private final CustomerRepository customerRepository;
     private final UserService userService;
+    private final ActivityLogService activityLog;
+    private final Elramy.Group.MafroshartElramyz.settings.StoreSettingsService storeSettings;
+    private final Elramy.Group.MafroshartElramyz.installment.InstallmentService installments;
 
 
     // =========================================================
@@ -53,14 +65,25 @@ public class SalesInvoiceServiceImpl
         Branch branch = branchRepository
                 .findById(request.branchId())
                 .orElseThrow(() ->
-                        new RuntimeException(
-                                "Branch not found with id: "
-                                        + request.branchId()
+                        new BranchNotFoundException(
+                                request.branchId()
                         )
                 );
 
+        if (branch.getActive() != null
+                && !branch.getActive()) {
+
+            throw new IllegalArgumentException(
+                    "Cannot sell from an inactive branch."
+            );
+        }
+
         User currentUser =
                 userService.getCurrentUser();
+
+        if (request.installment() != null && currentUser.getRole() != Role.ADMIN) {
+            throw new Elramy.Group.MafroshartElramyz.exception.UnauthorizedException("البيع بالتقسيط متاح للمدير فقط.");
+        }
 
         if (currentUser.getRole() != Role.ADMIN) {
 
@@ -82,29 +105,25 @@ public class SalesInvoiceServiceImpl
         // CUSTOMER
         // =========================================================
 
-        Customer customer = null;
-
-        if (request.customer() != null
-                && request.customer().phone() != null
-                && !request.customer().phone().isBlank()) {
-
-            String phone =
-                    request.customer().phone().trim();
-
-            customer = customerRepository
-                    .findByPhone(phone)
-                    .orElseGet(() -> {
-
-                        Customer newCustomer =
-                                Customer.builder()
-                                        .name(request.customer().name())
-                                        .phone(phone)
-                                        .address(request.customer().address())
-                                        .active(true)
-                                        .build();
-
-                        return customerRepository.save(newCustomer);
-                    });
+        // Required by validation; matched by phone, created on first sale.
+        String phone = request.customer().phone().trim();
+        Customer customer = customerRepository.findByPhone(phone).orElse(null);
+        if (customer == null) {
+            customer = customerRepository.save(Customer.builder()
+                    .name(request.customer().name().trim())
+                    .phone(phone)
+                    .address(request.customer().address())
+                    .active(true)
+                    .build());
+            activityLog.record(ActivityEntity.CUSTOMER, ActivityAction.CREATE, customer.getId(),
+                    customer.getName() + " (" + phone + ")", "إضافة عميل من فاتورة بيع «" + customer.getName() + "»",
+                    Changes.of().set("الاسم", customer.getName()).set("الهاتف", phone).set("العنوان", customer.getAddress()));
+        } else if (Boolean.FALSE.equals(customer.getActive())) {
+            // A hidden (soft-deleted) customer who buys again is back.
+            customer.setActive(true);
+            customerRepository.save(customer);
+            activityLog.record(ActivityEntity.CUSTOMER, ActivityAction.STATUS, customer.getId(),
+                    customer.getName() + " (" + phone + ")", "استعادة العميل «" + customer.getName() + "» عند البيع له");
         }
 
 
@@ -122,8 +141,10 @@ public class SalesInvoiceServiceImpl
         // INVOICE DISCOUNT
         // =========================================================
 
+        // A percentage is turned into an amount once the items total is
+        // known (below); the amount is what every total and report uses.
         BigDecimal invoiceDiscount =
-                request.discount() != null
+                request.discountPercent() == null && request.discount() != null
                         ? request.discount()
                         : BigDecimal.ZERO;
 
@@ -158,35 +179,44 @@ public class SalesInvoiceServiceImpl
         for (SalesInvoiceItemRequest itemRequest
                 : request.items()) {
 
-            Product product =
-                    productRepository
-                            .findById(itemRequest.productId())
+            // The exact colour/size being sold (V11).
+            ProductVariant variant =
+                    variantRepository
+                            .findById(itemRequest.variantId())
                             .orElseThrow(() ->
-                                    new ProductNotFoundException(
-                                            itemRequest.productId()
+                                    new ResourceNotFoundException(
+                                            "Product variant " + itemRequest.variantId() + " not found."
                                     )
                             );
+            Product product = variant.getProduct();
+
+            if (Boolean.FALSE.equals(variant.getActive())) {
+                throw new IllegalArgumentException(
+                        "هذا اللون/المقاس غير نشط: " + product.getName() + " (" + variant.label() + ")"
+                );
+            }
+
+            // A soft-deleted product must not be sellable.
+            if (Boolean.FALSE.equals(product.getActive())) {
+
+                throw new IllegalArgumentException(
+                        "Product is not active: "
+                                + product.getName()
+                );
+            }
 
 
             // =====================================================
             // GET CURRENT SELLING PRICE
             // =====================================================
 
-            ProductPrice productPrice =
-                    productPriceRepository
-                            .findByProductIdAndActiveTrue(
-                                    product.getId()
-                            )
-                            .orElseThrow(() ->
-                                    new RuntimeException(
-                                            "Current price not found for product: "
-                                                    + product.getId()
-                                    )
-                            );
-
+            // The current price lives on the product (see V6).
+            if (product.getSellingPrice() == null) {
+                throw new PriceNotFoundException(product.getId());
+            }
 
             BigDecimal unitPrice =
-                    productPrice.getSellingPrice();
+                    product.getSellingPrice();
 
 
             // =====================================================
@@ -210,7 +240,9 @@ public class SalesInvoiceServiceImpl
                                             itemRequest.quantity()
                                     )
                             )
-                            .subtract(itemDiscount);
+                            .subtract(itemDiscount)
+                            // Money is stored to 2 decimals consistently.
+                            .setScale(2, java.math.RoundingMode.HALF_UP);
 
 
             if (itemTotal.compareTo(BigDecimal.ZERO) < 0) {
@@ -229,6 +261,7 @@ public class SalesInvoiceServiceImpl
                     SalesInvoiceItem.builder()
                             .invoice(invoice)
                             .product(product)
+                            .variant(variant)
                             .quantity(itemRequest.quantity())
                             .unitPrice(unitPrice)
                             .discount(itemDiscount)
@@ -246,8 +279,15 @@ public class SalesInvoiceServiceImpl
         // CALCULATE INVOICE TOTAL
         // =========================================================
 
+        if (request.discountPercent() != null) {
+            invoiceDiscount = percentOf(subtotal, request.discountPercent());
+            invoice.setDiscount(invoiceDiscount);
+            invoice.setDiscountPercent(request.discountPercent().setScale(2, java.math.RoundingMode.HALF_UP));
+        }
+
         BigDecimal total =
-                subtotal.subtract(invoiceDiscount);
+                subtotal.subtract(invoiceDiscount)
+                        .setScale(2, java.math.RoundingMode.HALF_UP);
 
 
         if (total.compareTo(BigDecimal.ZERO) < 0) {
@@ -271,6 +311,48 @@ public class SalesInvoiceServiceImpl
 
 
         // =========================================================
+        // EMPLOYEE DISCOUNT LIMIT
+        // =========================================================
+
+        // Line and invoice discounts together, as a share of the invoice
+        // before any discount. Admins have no limit.
+        if (currentUser.getRole() != Role.ADMIN) {
+            BigDecimal gross = items.stream()
+                    .map(i -> i.getUnitPrice().multiply(BigDecimal.valueOf(i.getQuantity())))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal discounts = gross.subtract(total);
+            BigDecimal maxPercent = storeSettings.employeeMaxDiscountPercent();
+            BigDecimal allowed = gross.multiply(maxPercent).divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+            if (discounts.compareTo(allowed) > 0) {
+                throw new IllegalArgumentException("الخصم (" + discounts.stripTrailingZeros().toPlainString()
+                        + " ج.م) أكبر من المسموح للموظف (" + maxPercent.stripTrailingZeros().toPlainString()
+                        + "% = " + allowed.stripTrailingZeros().toPlainString() + " ج.م). اطلب من المدير.");
+            }
+        }
+
+
+        // =========================================================
+        // CASH PART (for the cash closing)
+        // =========================================================
+
+        BigDecimal cashAmount;
+        if (request.paymentMethod() == PaymentMethod.CASH) {
+            cashAmount = paid;
+        } else if (request.paymentMethod() == PaymentMethod.MIXED) {
+            if (request.cashAmount() == null) {
+                throw new IllegalArgumentException("اكتب الجزء المدفوع نقداً من الدفع المختلط.");
+            }
+            cashAmount = request.cashAmount().setScale(2, java.math.RoundingMode.HALF_UP);
+            if (cashAmount.compareTo(paid) > 0) {
+                throw new IllegalArgumentException("الجزء النقدي لا يمكن أن يزيد عن المبلغ المدفوع.");
+            }
+        } else {
+            cashAmount = BigDecimal.ZERO;
+        }
+        invoice.setCashAmount(cashAmount);
+
+
+        // =========================================================
         // SET ITEMS + TOTAL
         // =========================================================
 
@@ -286,16 +368,27 @@ public class SalesInvoiceServiceImpl
 
 
         // =========================================================
+        // INSTALLMENT PLAN (what is not paid now, split by month)
+        // =========================================================
+
+        if (request.installment() != null) {
+            installments.createPlan(invoice, request.installment(), currentUser);
+        }
+
+
+        // =========================================================
         // DECREASE STOCK
         // =========================================================
 
-        for (SalesInvoiceItem item : items) {
+        // Rows are locked in id order so two invoices sharing variants
+        // cannot deadlock each other (X locks A then B, Y locks B then A).
+        for (SalesInvoiceItem item : items.stream()
+                .sorted(java.util.Comparator.comparing((SalesInvoiceItem i) -> i.getVariant().getId()))
+                .toList()) {
 
             stockService.decreaseStock(
 
-                    item.getProduct().getId(),
-
-                    branch.getId(),
+                    item.getVariant().getId(),
 
                     item.getQuantity(),
 
@@ -317,6 +410,18 @@ public class SalesInvoiceServiceImpl
         // RETURN RESPONSE
         // =========================================================
 
+        activityLog.record(ActivityEntity.SALES_INVOICE, ActivityAction.CREATE, invoice.getId(), invoice.getInvoiceNumber(),
+                "فاتورة بيع " + invoice.getInvoiceNumber()
+                        + (invoice.getCustomer() != null ? " للعميل «" + invoice.getCustomer().getName() + "»" : "")
+                        + " بإجمالي " + invoice.getTotal().stripTrailingZeros().toPlainString() + " ج.م",
+                invoiceLines(invoice.getItems().stream()
+                        .map(i -> lineText(i.getProduct().getName(), i.getVariant(), i.getQuantity(), i.getTotal())).toList())
+                        .set("الخصم", invoice.getDiscount())
+                        .set("نسبة الخصم %", invoice.getDiscountPercent())
+                        .set("المدفوع", invoice.getPaid())
+                        .set("المتبقي", invoice.getTotal().subtract(invoice.getPaid()))
+                        .set("طريقة الدفع", invoice.getPaymentMethod()));
+
         return salesInvoiceMapper.toResponse(invoice);
     }
 
@@ -331,11 +436,13 @@ public class SalesInvoiceServiceImpl
         SalesInvoice invoice =
                 salesInvoiceRepository.findById(id)
                         .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Sales invoice not found with id: "
-                                                + id
-                                )
+                                new SalesInvoiceNotFoundException(id)
                         );
+
+        // EMPLOYEE may only read invoices of their own branch.
+        userService.validateBranchAccess(
+                invoice.getBranch().getId()
+        );
 
         return salesInvoiceMapper.toResponse(invoice);
     }
@@ -343,9 +450,10 @@ public class SalesInvoiceServiceImpl
 
 
     @Transactional(readOnly = true)
+    @Override
     public List<SalesInvoiceResponse> getByPhone(String phone) {
 
-        var  customer = customerRepository.findByPhone(phone).orElseThrow(() ->
+        var customer = customerRepository.findByPhone(phone == null ? null : phone.trim()).orElseThrow(() ->
                 new CustomerPhoneNotFoundException(
                         phone
                 )
@@ -353,17 +461,48 @@ public class SalesInvoiceServiceImpl
 
         var id = customer.getId();
 
-
-
+        Long branchId =
+                userService.getEffectiveBranchId(null);
 
         return salesInvoiceRepository
                 .findByCustomerId(
                         id
                 )
                 .stream()
+                // EMPLOYEE sees only their branch's invoices for the customer.
+                .filter(invoice ->
+                        branchId == null
+                                || invoice.getBranch().getId()
+                                .equals(branchId))
                 .map(salesInvoiceMapper::toResponse)
                 .toList();
     }
+
+    // =========================================================
+    // GET BY INVOICE NUMBER
+    // =========================================================
+
+    @Override
+    @Transactional(readOnly = true)
+    public SalesInvoiceResponse getByInvoiceNumber(
+            String invoiceNumber) {
+
+        var invoice =
+                salesInvoiceRepository
+                        .findByInvoiceNumber(invoiceNumber)
+                        .orElseThrow(() ->
+                                new SalesInvoiceNotFoundException(
+                                        invoiceNumber
+                                )
+                        );
+
+        userService.validateBranchAccess(
+                invoice.getBranch().getId()
+        );
+
+        return salesInvoiceMapper.toResponse(invoice);
+    }
+
 
     // =========================================================
     // GET ALL
@@ -372,9 +511,15 @@ public class SalesInvoiceServiceImpl
     @Override
     @Transactional(readOnly = true)
     public List<SalesInvoiceResponse> getAll() {
+        return getAll(null, null);
+    }
 
-        return salesInvoiceRepository
-                .findAll()
+    @Override
+    @Transactional(readOnly = true)
+    public List<SalesInvoiceResponse> getAll(java.time.LocalDate from, java.time.LocalDate to) {
+        Long branchId = userService.getEffectiveBranchId(null);
+        Elramy.Group.MafroshartElramyz.util.DateRange range = Elramy.Group.MafroshartElramyz.util.DateRange.of(from, to);
+        return salesInvoiceRepository.findInRange(branchId, range.from(), range.to())
                 .stream()
                 .map(salesInvoiceMapper::toResponse)
                 .toList();
@@ -389,6 +534,8 @@ public class SalesInvoiceServiceImpl
     @Transactional(readOnly = true)
     public List<SalesInvoiceResponse> getByBranch(
             Long branchId) {
+
+        userService.validateBranchAccess(branchId);
 
         return salesInvoiceRepository
                 .findByBranchIdOrderByCreatedAtDesc(
@@ -408,6 +555,17 @@ public class SalesInvoiceServiceImpl
     @Transactional(readOnly = true)
     public List<SalesInvoiceResponse> getByCashier(
             Long cashierId) {
+
+        User currentUser = userService.getCurrentUser();
+
+        // An EMPLOYEE may only look at their own invoices.
+        if (currentUser.getRole() != Role.ADMIN
+                && !currentUser.getId().equals(cashierId)) {
+
+            throw new BranchAccessDeniedException(
+                    "You cannot view another cashier's invoices"
+            );
+        }
 
         return salesInvoiceRepository
                 .findByCashierIdOrderByCreatedAtDesc(
@@ -442,5 +600,24 @@ public class SalesInvoiceServiceImpl
         );
 
         return invoiceNumber;
+    }
+
+    static Changes invoiceLines(List<String> lines) {
+        Changes c = Changes.of();
+        for (int i = 0; i < lines.size(); i++) c.set("بند " + (i + 1), lines.get(i));
+        return c;
+    }
+
+    static String lineText(String product, ProductVariant variant, Integer qty, BigDecimal total) {
+        String v = variant != null && !variant.label().equals("بدون لون أو مقاس") ? " (" + variant.label() + ")" : "";
+        return product + v + " × " + qty + " = " + (total != null ? total.stripTrailingZeros().toPlainString() : "-");
+    }
+
+    /**
+     * {@code percent}% of {@code amount}, to the piastre (half up). The
+     * frontend shows the same figure with whole-piastre integer maths.
+     */
+    static BigDecimal percentOf(BigDecimal amount, BigDecimal percent) {
+        return amount.multiply(percent).divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
     }
 }

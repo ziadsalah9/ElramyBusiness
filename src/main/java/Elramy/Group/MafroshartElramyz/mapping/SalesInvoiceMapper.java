@@ -1,8 +1,8 @@
 package Elramy.Group.MafroshartElramyz.mapping;
 
-import Elramy.Group.MafroshartElramyz.enums.customer.CustomerResponse;
-import Elramy.Group.MafroshartElramyz.enums.salesInvoice.SalesInvoiceItemResponse;
-import Elramy.Group.MafroshartElramyz.enums.salesInvoice.SalesInvoiceResponse;
+import Elramy.Group.MafroshartElramyz.dto.customer.CustomerResponse;
+import Elramy.Group.MafroshartElramyz.dto.salesInvoice.SalesInvoiceItemResponse;
+import Elramy.Group.MafroshartElramyz.dto.salesInvoice.SalesInvoiceResponse;
 import Elramy.Group.MafroshartElramyz.models.SalesInvoice;
 import Elramy.Group.MafroshartElramyz.models.SalesInvoiceItem;
 import lombok.RequiredArgsConstructor;
@@ -82,7 +82,13 @@ public class SalesInvoiceMapper {
                 invoice.getNotes(),
 
                 // 15 - createdAt
-                invoice.getCreatedAt()
+                invoice.getCreatedAt(),
+                // 16 - cashAmount
+                invoice.getCashAmount(),
+                // 17 - returnedTotal
+                invoice.getReturnedTotal(),
+                // 18 - discountPercent
+                invoice.getDiscountPercent()
         );
     }
 
@@ -108,7 +114,16 @@ public class SalesInvoiceMapper {
 
                 item.getDiscount(),
 
-                item.getTotal()
+                item.getTotal(),
+
+                item.getVariant() != null ? item.getVariant().getId() : null,
+
+                item.getVariant() != null ? item.getVariant().getCode() : null,
+
+                item.getVariant() != null ? item.getVariant().getColor() : null,
+
+                item.getVariant() != null ? item.getVariant().getSize() : null,
+                item.getReturnedQuantity()
         );
     }
 }

@@ -1,7 +1,8 @@
 package Elramy.Group.MafroshartElramyz.services;
 
-import Elramy.Group.MafroshartElramyz.enums.user.CreateUserRequest;
-import Elramy.Group.MafroshartElramyz.enums.user.UserResponse;
+import Elramy.Group.MafroshartElramyz.dto.user.CreateUserRequest;
+import Elramy.Group.MafroshartElramyz.dto.user.UpdateUserRequest;
+import Elramy.Group.MafroshartElramyz.dto.user.UserResponse;
 import Elramy.Group.MafroshartElramyz.models.User;
 
 import java.util.List;
@@ -15,6 +16,27 @@ public interface UserService {
     UserResponse create(
             CreateUserRequest request
     );
+
+    // =========================================================
+    // UPDATE
+    // =========================================================
+
+    UserResponse update(
+            Long id,
+            UpdateUserRequest request
+    );
+
+    // =========================================================
+    // CURRENT USER (from JWT)
+    // =========================================================
+
+    UserResponse getCurrentUserResponse();
+
+    /**
+     * The signed-in user changes their own password; the current one must
+     * be right. Older logins stop working. Returns the updated user.
+     */
+    User changeOwnPassword(String currentPassword, String newPassword);
 
 
     // =========================================================
@@ -72,4 +94,14 @@ public interface UserService {
     User getCurrentUser();
 
      void validateBranchAccess(Long branchId);
+
+    /**
+     * Resolves the branch a read operation may see data for.
+     *
+     * <p>ADMIN may request any branch ({@code null} meaning "all
+     * branches"). An EMPLOYEE is always limited to their own branch:
+     * a mismatching {@code requestedBranchId} is rejected and the
+     * employee's branch is returned regardless.
+     */
+    Long getEffectiveBranchId(Long requestedBranchId);
 }

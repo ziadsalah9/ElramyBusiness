@@ -2,6 +2,7 @@ package Elramy.Group.MafroshartElramyz.repository;
 
 import Elramy.Group.MafroshartElramyz.enums.Role;
 import Elramy.Group.MafroshartElramyz.models.User;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -15,6 +16,12 @@ public interface UserRepository
     // =========================================================
 
     Optional<User> findByUsername(String username);
+
+    // Fetches the branch eagerly so the login response can read
+    // branchName without relying on an open session (see
+    // spring.jpa.open-in-view=false).
+    @EntityGraph(attributePaths = "branch")
+    Optional<User> findWithBranchByUsername(String username);
 
     boolean existsByUsername(String username);
 

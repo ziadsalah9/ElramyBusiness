@@ -1,6 +1,6 @@
 package Elramy.Group.MafroshartElramyz.services;
 
-import Elramy.Group.MafroshartElramyz.enums.product.*;
+import Elramy.Group.MafroshartElramyz.dto.product.*;
 
 import java.util.List;
 
@@ -13,18 +13,33 @@ public interface ProductService {
 
     ProductResponse getById(Long id);
 
+    ProductPriceResponse getPrice(Long productId);
+
+    void delete(Long id);
+
     List<ProductResponse> getAll();
 
     void toggleStatus(Long id);
 
 
-    ProductResponse createPrice(
+    /** Sets (first time or changes) the product's current price. */
+    ProductResponse setPrice(
             Long productId,
             CreateProductPriceRequest request
     );
 
-    ProductResponse updatePrice(Long id, UpdatePriceRequest request);
-
     List<ProductResponse> search(String keyword);
+
+    /** Active products at or below their minimum quantity. */
+    List<ProductResponse> getLowStock();
+
+    /** Finds a variant by its code or barcode (for scanning on invoices). */
+    VariantLookupResponse lookupVariant(String code);
+
+    /**
+     * Adds one colour/size to an existing product, or returns it when the
+     * product already has that combination (reactivating it if needed).
+     */
+    ProductVariantResponse addVariant(Long productId, String color, String size);
 
 }

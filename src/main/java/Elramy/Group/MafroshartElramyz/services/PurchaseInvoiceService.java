@@ -1,9 +1,9 @@
 package Elramy.Group.MafroshartElramyz.services;
 
 
-import Elramy.Group.MafroshartElramyz.enums.purchaseInvoice.CreatePurchaseInvoiceRequest;
-import Elramy.Group.MafroshartElramyz.enums.purchaseInvoice.PurchaseInvoiceImportRow;
-import Elramy.Group.MafroshartElramyz.enums.purchaseInvoice.PurchaseInvoiceResponse;
+import Elramy.Group.MafroshartElramyz.dto.purchaseInvoice.CreatePurchaseInvoiceRequest;
+import Elramy.Group.MafroshartElramyz.dto.purchaseInvoice.PurchaseInvoiceImportRow;
+import Elramy.Group.MafroshartElramyz.dto.purchaseInvoice.PurchaseInvoiceResponse;
 
 import java.util.List;
 
@@ -17,11 +17,12 @@ public interface PurchaseInvoiceService {
 
     List<PurchaseInvoiceResponse> getAll();
 
+    /** Newest first; null dates = open ends. */
+    List<PurchaseInvoiceResponse> getAll(java.time.LocalDate from, java.time.LocalDate to);
+
     PurchaseInvoiceResponse getByInvoiceNumber(
             String invoiceNumber
     );
-    List<PurchaseInvoiceResponse> importInvoices(
-            List<PurchaseInvoiceImportRow> rows
-    );
+    List<PurchaseInvoiceResponse> importInvoices(List<PurchaseInvoiceImportRow> rows, Long supplierId);
 
 }

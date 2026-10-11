@@ -1,8 +1,8 @@
 package Elramy.Group.MafroshartElramyz.services;
 
 import Elramy.Group.MafroshartElramyz.enums.PaymentMethod;
-import Elramy.Group.MafroshartElramyz.enums.purchaseInvoice.PurchaseInvoiceImportRow;
-import Elramy.Group.MafroshartElramyz.enums.purchaseInvoice.PurchaseInvoiceResponse;
+import Elramy.Group.MafroshartElramyz.dto.purchaseInvoice.PurchaseInvoiceImportRow;
+import Elramy.Group.MafroshartElramyz.dto.purchaseInvoice.PurchaseInvoiceResponse;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -30,8 +30,7 @@ public class PurchaseInvoiceImportServiceImpl
     // =========================================================
 
     @Override
-    public List<PurchaseInvoiceResponse> importFile(
-            MultipartFile file) {
+    public List<PurchaseInvoiceResponse> importFile(MultipartFile file, Long supplierId) {
 
         validateFile(file);
 
@@ -68,7 +67,7 @@ public class PurchaseInvoiceImportServiceImpl
 
 
             // هنا بنسلم البيانات للـ PurchaseInvoiceService
-            return purchaseInvoiceService.importInvoices(rows);
+            return purchaseInvoiceService.importInvoices(rows, supplierId);
 
         } catch (IOException e) {
 
@@ -113,6 +112,11 @@ public class PurchaseInvoiceImportServiceImpl
                         || isEmptyExcelRow(row)) {
 
                     continue;
+                }
+
+                if (rows.size() == ProductImportServiceImpl.MAX_ROWS) {
+                    throw new IllegalArgumentException(
+                            "الملف يحتوي على أكثر من " + ProductImportServiceImpl.MAX_ROWS + " صف.");
                 }
 
                 rows.add(

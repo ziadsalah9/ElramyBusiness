@@ -31,3 +31,11 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Local runtime files ###
+backend.log
+backend.pid
+.DS_Store
+
+### Built frontend (copied in by deploy/build-release.sh) ###
+src/main/resources/static/

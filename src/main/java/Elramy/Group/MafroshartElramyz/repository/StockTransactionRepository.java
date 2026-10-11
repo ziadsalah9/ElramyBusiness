@@ -1,31 +1,18 @@
 package Elramy.Group.MafroshartElramyz.repository;
 
-import Elramy.Group.MafroshartElramyz.enums.TransactionType;
 import Elramy.Group.MafroshartElramyz.models.StockTransaction;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
+
 public interface StockTransactionRepository
         extends JpaRepository<StockTransaction, Long> {
 
-    List<StockTransaction> findByProductStockIdOrderByCreatedAtDesc(
-            Long productStockId
-    );
+    boolean existsByVariantId(Long variantId);
 
-    List<StockTransaction> findByProductStockProductIdOrderByCreatedAtDesc(
-            Long productId
-    );
-
-    List<StockTransaction> findByProductStockBranchIdOrderByCreatedAtDesc(
-            Long branchId
-    );
-
-    List<StockTransaction> findByTransactionTypeOrderByCreatedAtDesc(
-            TransactionType transactionType
-    );
-
-    List<StockTransaction> findByReferenceId(
-            Long referenceId
-    );
+    /** Last sale per product: [productId, lastSaleAt]. */
+    @org.springframework.data.jpa.repository.Query("SELECT t.product.id, MAX(t.createdAt) FROM StockTransaction t"
+            + " WHERE t.transactionType = Elramy.Group.MafroshartElramyz.enums.TransactionType.SALE GROUP BY t.product.id")
+    List<Object[]> lastSalePerProduct();
 }

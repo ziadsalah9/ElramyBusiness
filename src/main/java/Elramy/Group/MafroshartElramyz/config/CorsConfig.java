@@ -1,9 +1,8 @@
 package Elramy.Group.MafroshartElramyz.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.Ordered;
-import org.springframework.core.annotation.Order;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -13,18 +12,18 @@ import java.util.List;
 @Configuration
 public class CorsConfig {
 
+    @Value("${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}")
+    private List<String> allowedOrigins;
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
 
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOriginPatterns(List.of(
-                "http://localhost:5173",
-             "http://localhost:3000",
-                "https://admin-buddy-62.lovable.app",
-                "https://arabic-furniture-man-98a2.bolt.host",
-                "*"
-        ));
+        // Exact origins from CORS_ALLOWED_ORIGINS (comma separated); only
+        // the local dev servers by default. Third-party preview hosts are
+        // not trusted unless listed there explicitly.
+        configuration.setAllowedOrigins(allowedOrigins);
 
         configuration.setAllowedMethods(List.of(
                 "GET",
@@ -37,7 +36,9 @@ public class CorsConfig {
 
         configuration.setAllowedHeaders(List.of("*"));
 
-        configuration.setAllowCredentials(true);
+        // Auth is a bearer token header, not cookies, so credentialed CORS
+        // is not needed.
+        configuration.setAllowCredentials(false);
 
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();

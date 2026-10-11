@@ -46,6 +46,11 @@ public class PurchaseInvoice extends BaseEntity {
 
     private String notes;
 
+    /** Who we bought from (V20); null on purchases made before suppliers existed. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "supplier_id")
+    private Elramy.Group.MafroshartElramyz.supplier.Supplier supplier;
+
     @OneToMany(
             mappedBy = "invoice",
             cascade = CascadeType.ALL,

@@ -35,8 +35,20 @@ public class SalesInvoice extends BaseEntity {
     @Builder.Default
     private BigDecimal discount = BigDecimal.ZERO;
 
+    /** The percentage the invoice discount was computed from; null when entered as an amount (V26). */
+    @Column(name = "discount_percent", precision = 5, scale = 2)
+    private BigDecimal discountPercent;
+
     @Column(nullable = false)
     private BigDecimal total;
+
+    /** Cash part of {@code paid} (V16): CASH = paid, MIXED = typed, others = 0; null = unknown (old MIXED). */
+    private BigDecimal cashAmount;
+
+    /** Value already returned (V16); never more than {@code total}. */
+    @Builder.Default
+    @Column(nullable = false)
+    private BigDecimal returnedTotal = BigDecimal.ZERO;
 
     @Builder.Default
     private BigDecimal paid = BigDecimal.ZERO;

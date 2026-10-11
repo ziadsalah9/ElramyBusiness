@@ -22,6 +22,10 @@ public class Customer extends BaseEntity {
     @Column(nullable = false, unique = true)
     private String phone;
 
+    // Optional extra contact number. Not unique: relatives often share one.
+    @Column(name = "secondary_phone", length = 20)
+    private String secondaryPhone;
+
     private String address;
 
     @Builder.Default

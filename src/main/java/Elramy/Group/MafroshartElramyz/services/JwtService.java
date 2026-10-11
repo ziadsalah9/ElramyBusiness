@@ -93,9 +93,24 @@ public class JwtService {
 
         return username.equals(
                 userDetails.getUsername()
-        ) && !isTokenExpired(token);
+        ) && !isTokenExpired(token) && !issuedBeforeCredentialsChange(token, userDetails);
     }
 
+
+    /**
+     * A token from before the last password/username change is revoked.
+     * JWT times have second precision, so the change time is truncated:
+     * a login in the same second as the change stays valid.
+     */
+    private boolean issuedBeforeCredentialsChange(String token, UserDetails userDetails) {
+        if (!(userDetails instanceof Elramy.Group.MafroshartElramyz.config.AppUserDetails app)
+                || app.getCredentialsChangedAt() == null) {
+            return false;
+        }
+        Date issuedAt = Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().getIssuedAt();
+        Date changedAt = Date.from(app.getCredentialsChangedAt().withNano(0).atZone(java.time.ZoneId.systemDefault()).toInstant());
+        return issuedAt == null || issuedAt.before(changedAt);
+    }
 
     // =========================================================
     // CHECK EXPIRATION

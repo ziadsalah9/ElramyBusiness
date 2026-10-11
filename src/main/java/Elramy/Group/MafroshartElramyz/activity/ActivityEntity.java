@@ -1,0 +1,19 @@
+package Elramy.Group.MafroshartElramyz.activity;
+
+public enum ActivityEntity {
+    PRODUCT,
+    SALES_INVOICE,
+    PURCHASE_INVOICE,
+    CUSTOMER,
+    USER,
+    BRANCH,
+    CASH_CLOSING,
+    PRODUCT_DRAFT,
+    STOCKTAKE,
+    SALES_RETURN,
+    CUSTOMER_PAYMENT,
+    SETTINGS,
+    SUPPLIER,
+    EXPENSE,
+    INSTALLMENT
+}
